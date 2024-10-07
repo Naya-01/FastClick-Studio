@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {ReactFlow, addEdge, ConnectionLineType, useNodesState, useEdgesState } from '@xyflow/react';
-import dagre from '@dagrejs/dagre'; // Importer dagre pour le layout
+import { ReactFlow, addEdge, ConnectionLineType, useNodesState, useEdgesState, Background, Controls, MiniMap } from '@xyflow/react';
+import dagre from '@dagrejs/dagre';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import '@xyflow/react/dist/style.css';
 import { Pair } from '../models/pair';
+import InputNode from './nodes/InputNode';
+import OutputNode from './nodes/OutputNode';
+import InputOutputNode from './nodes/InputOutputNode';
 
-// Fonction pour configurer dagre et calculer la disposition des nœuds
+const nodeTypes = {
+  inputNode: InputNode,
+  outputNode: OutputNode,
+  inputOutputNode: InputOutputNode,
+};
+
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -22,25 +30,20 @@ const lespairs = [
   new Pair('ToIPSummaryDumpLongLabel@3', 'Discard@4')
 ];
 
-// Fonction pour appliquer le layout dagre aux nœuds et arêtes
 const getLayoutedElements = (nodes, edges, direction = 'TB') => {
   const isHorizontal = direction === 'LR';
   dagreGraph.setGraph({ rankdir: direction });
 
-  // Ajouter chaque nœud au graphe dagre
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
   });
 
-  // Ajouter chaque arête au graphe dagre
   edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
-  // Appliquer le layout dagre
   dagre.layout(dagreGraph);
 
-  // Mettre à jour les positions des nœuds selon le calcul de dagre
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     node.position = {
@@ -66,27 +69,50 @@ const LayoutFlow = () => {
       const routerTreeModel = new RouterTreeModel(configData);
       const parsedNodes = [];
       const nodeSet = new Set();
-      // const pairs = lespairs;
+      //const pairs = lespairs;
       const pairs = routerTreeModel.getAllPairs();
+
+
+      const connections = {};  // tracker de connexions entrantes et sortantes des nodes
+
+      // compte les connexions entrantes et sortantes
+      pairs.forEach((pair) => {
+        if (!connections[pair.source]) {
+          connections[pair.source] = { input: false, output: true };
+        } else {
+          connections[pair.source].output = true;
+        }
+
+        if (!connections[pair.destination]) {
+          connections[pair.destination] = { input: true, output: false };
+        } else {
+          connections[pair.destination].input = true;
+        }
+      });
 
       pairs.forEach((pair) => {
         if (!nodeSet.has(pair.source)) {
+          const isInputOutputNode = connections[pair.source].input && connections[pair.source].output;
+
           parsedNodes.push({
             id: pair.source,
             data: { label: pair.source },
-            position: { x: 0, y: 0 }, // temporaire dagre s'en occupe
-            type: 'default',
+            position: { x: 0, y: 0 }, // temporaire, dagre s'en occupe
+            type: isInputOutputNode ? 'inputOutputNode' : 'inputNode',
             draggable: true,
             style: { border: '1px solid #004085', padding: 10, borderRadius: 5, backgroundColor: '#cce5ff' },
           });
           nodeSet.add(pair.source);
         }
+
         if (!nodeSet.has(pair.destination)) {
+          const isInputOutputNode = connections[pair.destination].input && connections[pair.destination].output;
+
           parsedNodes.push({
             id: pair.destination,
             data: { label: pair.destination },
             position: { x: 0, y: 0 },
-            type: 'default',
+            type: isInputOutputNode ? 'inputOutputNode' : 'outputNode',
             draggable: true,
             style: { border: '1px solid #004085', padding: 10, borderRadius: 5, backgroundColor: '#cce5ff' },
           });
@@ -123,12 +149,17 @@ const LayoutFlow = () => {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange} // Gérer les changements des nœuds
+        onNodesChange={onNodesChange} 
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        nodeTypes={nodeTypes}
         fitView
         style={{ width: '100%', height: '100%' }}
-      />
+      >
+        <Background />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
     </div>
   );
 };
