@@ -3,7 +3,12 @@ import { Handle } from '@xyflow/react';
 
 const InputNode = ({ data }) => {
   return (
-    <div>
+    <div 
+    style={{
+        minWidth: data.nodeWidth,
+        minHeight: data.nodeHeight,
+      }}
+      >
       <Handle
         type="source"
         position="bottom"

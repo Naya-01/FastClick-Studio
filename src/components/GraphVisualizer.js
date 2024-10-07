@@ -19,7 +19,7 @@ const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
 const nodeWidth = 172;
-const nodeHeight = 36;
+const nodeHeight = 20;
 
 const lespairs = [
   new Pair('FromDevice@1', 'Print@2'),
@@ -96,7 +96,7 @@ const LayoutFlow = () => {
 
           parsedNodes.push({
             id: pair.source,
-            data: { label: pair.source },
+            data: { label: pair.source, nodeWidth: nodeWidth, nodeHeight: nodeHeight },
             position: { x: 0, y: 0 }, // temporaire, dagre s'en occupe
             type: isInputOutputNode ? 'inputOutputNode' : 'inputNode',
             draggable: true,
@@ -110,7 +110,7 @@ const LayoutFlow = () => {
 
           parsedNodes.push({
             id: pair.destination,
-            data: { label: pair.destination },
+            data: { label: pair.destination, nodeWidth: nodeWidth, nodeHeight: nodeHeight },
             position: { x: 0, y: 0 },
             type: isInputOutputNode ? 'inputOutputNode' : 'outputNode',
             draggable: true,

@@ -3,8 +3,13 @@ import { Handle } from '@xyflow/react';
 
 const InputOutputNode = ({ data }) => {
   return (
-    <div>
-        
+    <div 
+    style={{
+        minWidth: data.nodeWidth,
+        minHeight: data.nodeHeight,
+      }}
+      >
+
       <Handle
         type="target"
         position="top"
