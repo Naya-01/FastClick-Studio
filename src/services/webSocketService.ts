@@ -1,55 +1,80 @@
-import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
+import axios from 'axios';
 
 export class WebsocketService {
-  private socket: Socket;
-
-  constructor() {
-    this.socket = io('http://localhost:3000');
-  }
-
+  
   getClickConfig(): Observable<string> {
-    return new Observable<string>(observer => {
-      this.socket.emit('getConfig');
-      this.socket.on('clickConfig', (data: string) => {
-        observer.next(data);
-      });
+    return new Observable(observer => {
+      axios.get('/clickconfig', {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
     });
   }
 
   getFlatConfig(): Observable<string> {
-    return new Observable<string>(observer => {
-      this.socket.emit('getFlatConfig');
-      this.socket.on('clickFlatConfig', (data: string) => {
-        observer.next(data);
-      });
+    return new Observable(observer => {
+      axios.get('/flatconfig', {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
     });
   }
 
   sendCommand(command: string): Observable<string> {
-    return new Observable<string>(observer => {
-      this.socket.emit('command', command);
-      this.socket.on('commandResult', (data: string) => {
-        observer.next(data);
-      });
+    return new Observable(observer => {
+      axios.post('/command', { 
+        command,
+        headers: {
+        'Content-Type': 'text/plain'
+      } })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
     });
   }
 
   getHandlers(element: string): Observable<string[]> {
-    return new Observable<string[]>(observer => {
-      this.socket.emit('getHandlers', element);
-      this.socket.on('handlers', (data: string[]) => {
-        observer.next(data);
-      });
+    return new Observable(observer => {
+      axios.get(`/handlers/${element}`, {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
     });
   }
 
   getAllHandlersFields(element: string): Observable<string[]> {
-    return new Observable<string[]>(observer => {
-      this.socket.emit('getHandlers', element);
-      this.socket.on('handlers', (data: string[]) => {
-        observer.next(data);
-      });
+    return new Observable(observer => {
+      axios.get(`/handlers/${element}/fields`, {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
     });
   }
 }
