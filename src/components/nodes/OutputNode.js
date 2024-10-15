@@ -9,10 +9,9 @@ const OutputNode = ({ data }) => {
         minHeight: data.nodeHeight,
       }}
       >
-      {data.label}
       <Handle
-        type="target"
-        position="top"
+        type="source"
+        position="bottom"
         style={{
           width: '15px',
           height: '8px',
@@ -20,6 +19,7 @@ const OutputNode = ({ data }) => {
           borderRadius: 0,
         }}
       />
+      {data.label}
     </div>
   );
 };
