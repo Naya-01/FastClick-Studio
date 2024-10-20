@@ -4,14 +4,6 @@ import { Handle, Position } from '@xyflow/react';
 const DynamicHandlesNode = ({ id, data }) => {
   const { label, inputs = 0, outputs = 0 } = data;
 
-  const nodeStyle = {
-    position: 'relative',
-    padding: 10,
-    border: '1px solid #004085',
-    borderRadius: 5,
-    backgroundColor: '#cce5ff',
-  };
-
   const inputHandles = [];
   for (let i = 0; i < inputs; i++) {
     inputHandles.push(
