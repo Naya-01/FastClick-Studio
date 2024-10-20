@@ -15,6 +15,8 @@ import { handleData } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
 import NodeDetailsModal from './NodeDetailsModal';
 import DynamicHandlesNode from './DynamicHandlesNode';
+import { WebsocketService } from '../services/webSocketService';
+import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
 
 const nodeTypes = {
@@ -27,22 +29,24 @@ const LayoutFlow = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const webSocketService = new WebsocketService();
+
 
   useEffect(() => {
     const fetchData = () => {
       try {
-        // const subscription = websocketService.getFlatConfig().subscribe((configData) => {
-        //   const routerTreeModel = new RouterTreeModel(configData);
-        //   const pairs = routerTreeModel.getAllPairs();
-        //   const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
-        //   setNodes(layoutedNodes);
-        //   setEdges(layoutedEdges);
-        //   });
-        // return () => subscription.unsubscribe();
+        const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
+          const routerTreeModel = new RouterTreeModel(configData);
+          const pairs = routerTreeModel.getAllPairs();
+          const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
+          setNodes(layoutedNodes);
+          setEdges(layoutedEdges);
+          });
+        return () => subscription.unsubscribe();
   
-        const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
+        // const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
+        // setNodes(layoutedNodes);
+        // setEdges(layoutedEdges);
       } catch (error) {
         console.error("Failed to connect to Click, using fallback data", error);
       }
