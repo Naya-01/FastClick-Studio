@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ReactFlow, addEdge, ConnectionLineType, useNodesState, useEdgesState, Background, Controls, MiniMap } from '@xyflow/react';
+import {
+  ReactFlow,
+  addEdge,
+  ConnectionLineType,
+  useNodesState,
+  useEdgesState,
+  Background,
+  Controls,
+  MiniMap,
+  Handle,
+  Position,
+} from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
+import '@xyflow/react/dist/style.css';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
-import '@xyflow/react/dist/style.css';
 import { Pair } from '../models/pair';
-import InputNode from './nodes/InputNode';
-import OutputNode from './nodes/OutputNode';
-import InputOutputNode from './nodes/InputOutputNode';
+import DynamicHandlesNode from './nodes/DynamicHandlesNode';
 import {
   ChakraProvider,
   Box,
@@ -26,9 +35,7 @@ import {
 } from '@chakra-ui/react';
 
 const nodeTypes = {
-  inputNode: InputNode,
-  outputNode: OutputNode,
-  inputOutputNode: InputOutputNode,
+  dynamicHandlesNode: DynamicHandlesNode,
 };
 
 const dagreGraph = new dagre.graphlib.Graph();
@@ -85,80 +92,134 @@ const LayoutFlow = () => {
   
   const websocketService = new WebsocketService();
 
+  const outputHandleCounter = {};
+  const inputHandleCounter = {};
+
   useEffect(() => {
-    const subscription = websocketService.getFlatConfig().subscribe((configData) => {
-      const routerTreeModel = new RouterTreeModel(configData);
-      const parsedNodes = [];
-      const nodeSet = new Set();
-      const pairs = lespairs;
+    const fetchData = async () => {
+      try {
+        // const subscription = websocketService.getFlatConfig().subscribe((configData) => {
+        //   const routerTreeModel = new RouterTreeModel(configData);
+        //   const pairs = routerTreeModel.getAllPairs();
+        //   handleData(pairs);
+        // });
 
-      const connections = {};
+        // return () => subscription.unsubscribe();
+
+
+        return handleData(lespairs);
+      } catch (error) {
+        console.error("Failed to connect to Click, using fallback data", error);
+      }
+    };
+
+    const handleData = (pairs) => {
+      const nodeMap = new Map();
 
       pairs.forEach((pair) => {
-        if (!connections[pair.source]) {
-          connections[pair.source] = { input: false, output: true };
+        if (!nodeMap.has(pair.source)) {
+          nodeMap.set(pair.source, { id: pair.source, inputs: 0, outputs: 1 });
         } else {
-          connections[pair.source].output = true;
+          const node = nodeMap.get(pair.source);
+          node.outputs += 1;
+          nodeMap.set(pair.source, node);
         }
 
-        if (!connections[pair.destination]) {
-          connections[pair.destination] = { input: true, output: false };
+        if (!nodeMap.has(pair.destination)) {
+          nodeMap.set(pair.destination, { id: pair.destination, inputs: 1, outputs: 0 });
         } else {
-          connections[pair.destination].input = true;
+          const node = nodeMap.get(pair.destination);
+          node.inputs += 1;
+          nodeMap.set(pair.destination, node);
         }
       });
 
-      pairs.forEach((pair) => {
-        if (!nodeSet.has(pair.source)) {
-          const isInputOutputNode = connections[pair.source].input && connections[pair.source].output;
+      const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => ({
+        id: nodeData.id,
+        data: {
+          label: nodeData.id,
+          inputs: nodeData.inputs,
+          outputs: nodeData.outputs,
+          nodeWidth: nodeWidth,
+          nodeHeight: nodeHeight,
+        },
+        position: { x: 0, y: 0 },
+        type: 'dynamicHandlesNode',
+        style: { border: '1px solid #004085', padding: 10, borderRadius: 5, backgroundColor: '#cce5ff' },
+      }));
 
-          parsedNodes.push({
-            id: pair.source,
-            data: { label: pair.source, nodeWidth: nodeWidth, nodeHeight: nodeHeight },
-            position: { x: 0, y: 0 },
-            type: isInputOutputNode ? 'inputOutputNode' : 'outputNode',
-            style: { border: '1px solid #004085', padding: 10, borderRadius: 5, backgroundColor: '#cce5ff' },
-          });
-          nodeSet.add(pair.source);
-        }
+      // reset les compteurs de handles avant de créer les arêtes
+      Object.keys(outputHandleCounter).forEach((key) => (outputHandleCounter[key] = 0));
+      Object.keys(inputHandleCounter).forEach((key) => (inputHandleCounter[key] = 0));
 
-        if (!nodeSet.has(pair.destination)) {
-          const isInputOutputNode = connections[pair.destination].input && connections[pair.destination].output;
-
-          parsedNodes.push({
-            id: pair.destination,
-            data: { label: pair.destination, nodeWidth: nodeWidth, nodeHeight: nodeHeight },
-            position: { x: 0, y: 0 },
-            type: isInputOutputNode ? 'inputOutputNode' : 'inputNode',
-            style: { border: '1px solid #004085', padding: 10, borderRadius: 5, backgroundColor: '#cce5ff' },
-          });
-          nodeSet.add(pair.destination);
-        }
-      });
-
-      const parsedEdges = pairs.map((pair) => ({
-        id: `e${pair.source}-${pair.destination}`,
+      const parsedEdges = pairs.map((pair, index) => ({
+        id: `e${pair.source}-${pair.destination}-${index}`,
         source: pair.source,
         target: pair.destination,
+        sourceHandle: `output-handle-${getOutputHandleIndex(pair.source)}`,
+        targetHandle: `input-handle-${getInputHandleIndex(pair.destination)}`,
         type: ConnectionLineType.SmoothStep,
         animated: true,
       }));
 
+
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(parsedNodes, parsedEdges);
       setNodes([...layoutedNodes]);
       setEdges([...layoutedEdges]);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    fetchData();
   }, []);
 
+  const getOutputHandleIndex = (nodeId) => {
+    if (!outputHandleCounter[nodeId]) {
+      outputHandleCounter[nodeId] = 0;
+    }
+    return outputHandleCounter[nodeId]++;
+  };
+
+  const getInputHandleIndex = (nodeId) => {
+    if (!inputHandleCounter[nodeId]) {
+      inputHandleCounter[nodeId] = 0;
+    }
+    return inputHandleCounter[nodeId]++;
+  };
+
   const onConnect = useCallback(
-    (params) =>
+    (params) => {
+      const { source, target } = params;
+  
+      const sourceHandleIndex = getOutputHandleIndex(source);
+      const targetHandleIndex = getInputHandleIndex(target);
+  
       setEdges((eds) =>
-        addEdge({ ...params, type: ConnectionLineType.SmoothStep, animated: true }, eds)
-      ),
-    []
+        addEdge(
+          {
+            ...params,
+            sourceHandle: `output-handle-${sourceHandleIndex}`,
+            targetHandle: `input-handle-${targetHandleIndex}`,
+            type: ConnectionLineType.SmoothStep,
+            animated: true,
+          },
+          eds
+        )
+      );
+  
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === source) {
+            node.data = { ...node.data, outputs: node.data.outputs + 1 };
+          }
+          if (node.id === target) {
+            node.data = { ...node.data, inputs: node.data.inputs + 1 };
+          }
+          return node;
+        })
+      );
+    },
+    [setEdges, setNodes]
   );
+  
 
   const openModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
@@ -191,10 +252,7 @@ const LayoutFlow = () => {
                   overflow="hidden"
                   textOverflow="ellipsis"
                 >
-                  <Button 
-                  width="100%"
-                  justifyContent="flex-start"
-                  >
+                  <Button width="100%" justifyContent="flex-start">
                     {node.data.label}
                   </Button>
                 </ListItem>
@@ -215,9 +273,7 @@ const LayoutFlow = () => {
             style={{ width: '100%', height: '100%' }}
           >
             <Background />
-            <Controls 
-              showInteractive={false}
-            />
+            <Controls showInteractive={false} />
             <MiniMap />
           </ReactFlow>
         </Box>

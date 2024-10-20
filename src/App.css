@@ -36,3 +36,19 @@
     transform: rotate(360deg);
   }
 }
+
+.not-connected {
+  text-align: center;
+  margin-top: 20%;
+  font-family: Arial, sans-serif;
+}
+
+.not-connected h1 {
+  font-size: 36px;
+  color: red;
+}
+
+.not-connected p {
+  font-size: 18px;
+  color: gray;
+}
