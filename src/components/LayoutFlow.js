@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ReactFlow,
-  addEdge,
-  ConnectionLineType,
   useNodesState,
   useEdgesState,
   Background,
@@ -32,44 +30,29 @@ const LayoutFlow = () => {
   const webSocketService = new WebsocketService();
 
 
+  const fetchData = () => {
+    try {
+      // const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
+      //   const routerTreeModel = new RouterTreeModel(configData);
+      //   const pairs = routerTreeModel.getAllPairs();
+      //   const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
+      //   setNodes(layoutedNodes);
+      //   setEdges(layoutedEdges);
+      //   });
+      // return () => subscription.unsubscribe();
+
+      const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+    } catch (error) {
+      console.error("Failed to connect to Click, using fallback data", error);
+    }
+  };
+
+
   useEffect(() => {
-    const fetchData = () => {
-      try {
-        const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
-          const routerTreeModel = new RouterTreeModel(configData);
-          const pairs = routerTreeModel.getAllPairs();
-          const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
-          setNodes(layoutedNodes);
-          setEdges(layoutedEdges);
-          });
-        return () => subscription.unsubscribe();
-  
-        // const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
-        // setNodes(layoutedNodes);
-        // setEdges(layoutedEdges);
-      } catch (error) {
-        console.error("Failed to connect to Click, using fallback data", error);
-      }
-    };
     fetchData();
   }, []);
-  
-
-  const onConnect = useCallback(
-    (params) => {
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            type: ConnectionLineType.SmoothStep,
-            animated: true,
-          },
-          eds
-        )
-      );
-    },
-    [setEdges]
-  );
 
   const openModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
@@ -92,7 +75,6 @@ const LayoutFlow = () => {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView
             style={{ width: '100%', height: '100%' }}

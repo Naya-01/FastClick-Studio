@@ -1,4 +1,6 @@
 import { getLayoutedElements } from './layoutUtils';
+import { ConnectionLineType, MarkerType } from '@xyflow/react';
+
 
 export const handleData = (pairs) => {
   const nodeMap = new Map();
@@ -55,8 +57,11 @@ export const handleData = (pairs) => {
     target: pair.destination,
     sourceHandle: `output-handle-${getOutputHandleIndex(pair.source)}`,
     targetHandle: `input-handle-${getInputHandleIndex(pair.destination)}`,
-    type: 'smoothstep',
+    type: ConnectionLineType.SmoothStep,
     animated: true,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
   }));
 
   return getLayoutedElements(parsedNodes, parsedEdges);
