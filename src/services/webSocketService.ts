@@ -48,9 +48,9 @@ export class WebsocketService {
     });
   }
 
-  getHandlers(element: string): Observable<string[]> {
+  getHandlers(element: string, handler: string): Observable<string[]> {
     return new Observable(observer => {
-      axios.get(`/handlers/${element}`, {
+      axios.get(`/${element}/${handler}`, {
         headers: {
           'Content-Type': 'text/plain'
         }
@@ -65,7 +65,7 @@ export class WebsocketService {
 
   getAllHandlersFields(element: string): Observable<string[]> {
     return new Observable(observer => {
-      axios.get(`/handlers/${element}/fields`, {
+      axios.get(`/${element}`, {
         headers: {
           'Content-Type': 'text/plain'
         }
