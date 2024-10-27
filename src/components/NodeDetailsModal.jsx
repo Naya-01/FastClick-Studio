@@ -29,28 +29,41 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
 
   useEffect(() => {
     if (selectedNode) {
-      websocketService.getAllHandlersFields(selectedNode.id).subscribe(
-        (data) => {
+      const subscription = websocketService.getAllHandlersFields(selectedNode.id).subscribe({
+        next: (data) => {
           const handlerNames = Array.isArray(data)
-            ? data.map((line) => line.split(/\s+/)[0])
-            : data.split("\n").map((line) => line.split(/\s+/)[0]); 
+            ? data.map((line) => line.split(/\s+/)[0]).filter(Boolean)
+            : data.split("\n").map((line) => line.split(/\s+/)[0]).filter(Boolean);
           setHandlers(handlerNames);
         },
-        (error) => console.error("Erreur lors de la récupération des handlers:", error)
-      );
+        error: (error) => console.error("Error fetching handler names:", error),
+        complete: () => console.log("Completed fetching handler names"),
+      });
+  
+      return () => subscription.unsubscribe();
     }
   }, [selectedNode]);
+  
 
   const fetchHandlerDetails = (handler) => {
     setSelectedHandler(handler);
-    websocketService.getHandlers(selectedNode.id, handler).subscribe(
-      (data) => setHandlerDetails(data),
-      (error) => console.error("Error fetching handler details:", error)
-    );
+    websocketService.getHandlers(selectedNode.id, handler).subscribe({
+      next: (data) => {
+        setHandlerDetails(data != null ? String(data) : "No details available");
+      },
+      error: (error) => console.error("Error fetching handler details:", error),
+      complete: () => console.log("Completed fetching handler details"),
+    });
+  };
+
+  const handleClose = () => {
+    setSelectedHandler("");
+    setHandlerDetails("");
+    onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="full">
+    <Modal isOpen={isOpen} onClose={handleClose} size="full">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Node Details</ModalHeader>
@@ -58,8 +71,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
         <ModalBody>
           {selectedNode && (
             <>
-              <Text fontWeight="bold" mb={3}>Label: {selectedNode.data.label}</Text>
-              <Text mb={3}>Node ID: {selectedNode.id}</Text>
+              <Text fontWeight="bold" mb={3}>Node: {selectedNode.data.label}</Text>
 
               <Box display="flex">
                 <Table variant="simple" size="sm" mt={5} border="1px solid" borderColor={borderColor} width="40%">
@@ -101,7 +113,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" onClick={onClose}>
+          <Button colorScheme="blue" onClick={handleClose}>
             Close
           </Button>
         </ModalFooter>
