@@ -152,7 +152,19 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   <Text fontSize="lg" fontWeight="bold" mb={2}>
                     {selectedHandler || "Select a handler"}
                   </Text>
-                  {handlers.find((h) => h.name === selectedHandler && h.type.includes('w')) ? (
+                  {handlers.find((h) => h.name === selectedHandler && h.type.includes('r') && h.type.includes('w')) ? (
+                    <>
+                      <Text mb={4}>{handlerDetails || "Handler details will appear here when selected"}</Text>
+                      
+                      <Input
+                        value={editableValue}
+                        onChange={(e) => setEditableValue(e.target.value)}
+                        placeholder="Enter new value"
+                        mb={3}
+                      />
+                      <Button colorScheme="green" onClick={handleWrite}>Save</Button>
+                    </>
+                  ) : handlers.find((h) => h.name === selectedHandler && h.type.includes('w')) ? (
                     <>
                       <Input
                         value={editableValue}
