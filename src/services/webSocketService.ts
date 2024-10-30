@@ -78,22 +78,9 @@ export class WebsocketService {
     });
   }
 
-  postHandler(element: string , handler: string) {
+  postHandler(element: string , handler: string, data: any) {
     return new Observable(observer => {
-      axios.post(`/${element}/${handler}`, {}, {
-        headers: { 'Content-Type': 'text/plain' }
-      })
-        .then(response => {
-          observer.next(response.data);
-          observer.complete();
-        })
-        .catch(error => observer.error(error));
-    });
-  }
-
-  putHandler(element: string, handler: string, data: any) {
-    return new Observable(observer => {
-      axios.put(`/${element}/${handler}`, data, {
+      axios.post(`/${element}/${handler}`, {data}, {
         headers: { 'Content-Type': 'text/plain' }
       })
         .then(response => {

@@ -46,9 +46,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
           setHandlers(parseHandlers(data));
         },
         error: (error) => console.error("Error fetching handler names:", error),
-        complete: () => console.log("Completed fetching handler names"),
       });
-  
       return () => subscription.unsubscribe();
     }
   }, [selectedNode]);
@@ -56,13 +54,12 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   const fetchHandlerDetails = (handler) => {
     setSelectedHandler(handler.name);
 
-    if (handler.type.startsWith('r')) {  
+    if (handler.type.includes('r')) {  
       websocketService.getHandlers(selectedNode.id, handler.name).subscribe({
         next: (data) => {
           setHandlerDetails(data != null ? String(data) : "No details available");
         },
         error: (error) => console.error("Error fetching handler details:", error),
-        complete: () => console.log("Completed fetching handler details"),
       });
     } else {
       setHandlerDetails("Handler is not readable");
@@ -79,7 +76,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   };
 
   const handleWrite = () => {
-    websocketService.putHandler(selectedNode.id, selectedHandler, editableValue).subscribe({
+    websocketService.postHandler(selectedNode.id, selectedHandler, editableValue).subscribe({
       next: () => {
         setHandlerDetails(`Updated ${selectedHandler} to ${editableValue}`);
       },
@@ -95,21 +92,26 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   };
 
   const renderActionButton = (handler) => {
-    switch (handler.type) {
-      case 'w':
-        return (
-          <Button colorScheme="blue" onClick={() => handleWrite(handler)} size="sm">
-            Write
-          </Button>
-        );
-      case 'wb':
-        return (
-          <Button colorScheme="orange" onClick={() => handleReset(handler)} size="sm">
-            Reset
-          </Button>
-        );
-      default:
-        return <Button isDisabled size="sm">Read-Only</Button>;
+    if (handler.type.includes('w') && handler.type.includes('b')) {
+      return (
+        <Button colorScheme="orange" onClick={() => handleReset(handler)} size="sm">
+          Reset
+        </Button>
+      );
+    } else if (handler.type.includes('w') && handler.type.includes('r')) {
+      return (
+        <Button colorScheme="blue" onClick={() => handleWrite(handler)} size="sm">
+          Write
+        </Button>
+      );
+    } else if (handler.type.includes('w')) {
+      return (
+        <Button colorScheme="green" onClick={() => handleWrite(handler)} size="sm">
+          Write
+        </Button>
+      );
+    } else {
+      return <Button isDisabled size="sm">Read-Only</Button>;
     }
   };
 
@@ -134,12 +136,10 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   </Thead>
                   <Tbody>
                     {handlers.map((handler) => (
-                      <Tr
-                        key={handler.name}
-                        _hover={{ bg: 'gray.100' }}
-                        cursor="pointer"
-                      >
-                        <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>{handler.name}</Td>
+                      <Tr key={handler.name} _hover={{ bg: 'gray.100' }} cursor="pointer">
+                        <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>
+                          {handler.name}
+                        </Td>
                         <Td borderBottom="1px solid" borderColor={borderColor} width="100px">
                           {renderActionButton(handler)}
                         </Td>
@@ -148,19 +148,11 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   </Tbody>
                 </Table>
 
-                <Box
-                  ml={5}
-                  p={3}
-                  border="1px solid"
-                  borderColor={borderColor}
-                  flex="1"
-                  bg="gray.50"
-                  rounded="md"
-                >
+                <Box ml={5} p={3} border="1px solid" borderColor={borderColor} flex="1" bg="gray.50" rounded="md">
                   <Text fontSize="lg" fontWeight="bold" mb={2}>
                     {selectedHandler || "Select a handler"}
                   </Text>
-                  {handlers.find((h) => h.name === selectedHandler && h.type === 'w') ? (
+                  {handlers.find((h) => h.name === selectedHandler && h.type.includes('w')) ? (
                     <>
                       <Input
                         value={editableValue}
@@ -179,9 +171,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" onClick={handleClose}>
-            Close
-          </Button>
+          <Button colorScheme="blue" onClick={handleClose}>Close</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
