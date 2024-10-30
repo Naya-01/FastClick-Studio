@@ -28,7 +28,7 @@ export class RouterTreeModel {
     sequencePart.forEach(sequence => {
       const elements = sequence
         .split('->')
-        .map(item => item.trim().replace(/\s+/g, '').replace(/\[\d+\]$/, ''))
+        .map(item => item.trim().replace(/(^\[\d+\])|(\[\d+\]$)/g, '').replace(/\s+/g, ''))
         .filter(item => item);
 
       for (let i = 0; i < elements.length - 1; i++) {
