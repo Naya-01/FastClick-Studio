@@ -23,6 +23,8 @@ import { WebsocketService } from '../services/webSocketService';
 
 const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   const [handlers, setHandlers] = useState([]);
+  const [filteredHandlers, setFilteredHandlers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedHandler, setSelectedHandler] = useState("");
   const [handlerDetails, setHandlerDetails] = useState("");
   const [editableValue, setEditableValue] = useState("");
@@ -43,7 +45,9 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
     if (selectedNode) {
       const subscription = websocketService.getAllHandlersFields(selectedNode.id).subscribe({
         next: (data) => {
-          setHandlers(parseHandlers(data));
+          const parsedHandlers = parseHandlers(data);
+          setHandlers(parsedHandlers);
+          setFilteredHandlers(parsedHandlers);
         },
         error: (error) => console.error("Error fetching handler names:", error),
       });
@@ -91,6 +95,14 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
     onClose();
   };
 
+  const handleSearchChange = (e) => {
+    const searchValue = e.target.value.toLowerCase();
+    setSearchTerm(searchValue);
+    setFilteredHandlers(
+      handlers.filter((handler) => handler.name.toLowerCase().includes(searchValue))
+    );
+  };
+
   const renderActionButton = (handler) => {
     if (handler.type.includes('w') && handler.type.includes('b')) {
       return (
@@ -127,28 +139,38 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
               <Text fontWeight="bold" mb={3}>Node: {selectedNode.data.label}</Text>
 
               <Box display="flex">
-                <Table variant="simple" size="sm" mt={5} border="1px solid" borderColor={borderColor} width="40%">
-                  <Thead>
-                    <Tr>
-                      <Th>Handler</Th>
-                      <Th width="100px">Action</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {handlers.map((handler) => (
-                      <Tr key={handler.name} _hover={{ bg: 'gray.100' }} cursor="pointer">
-                        <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>
-                          {handler.name}
-                        </Td>
-                        <Td borderBottom="1px solid" borderColor={borderColor} width="100px">
-                          {renderActionButton(handler)}
-                        </Td>
+                <Box width="40%" maxHeight="700px" overflowY="auto" mr={5}>
+                  <Box position="sticky" top="0" bg="white" zIndex="1">
+                    <Input
+                      placeholder="Search handlers..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      mb={3}
+                    />
+                  </Box>
+                  <Table variant="simple" size="sm" border="1px solid" borderColor={borderColor}>
+                    <Thead position="sticky" top="40px" bg="white" zIndex="1">
+                      <Tr>
+                        <Th>Handler</Th>
+                        <Th width="100px">Action</Th>
                       </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
+                    </Thead>
+                    <Tbody>
+                      {filteredHandlers.map((handler) => (
+                        <Tr key={handler.name} _hover={{ bg: 'gray.100' }} cursor="pointer">
+                          <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>
+                            {handler.name}
+                          </Td>
+                          <Td borderBottom="1px solid" borderColor={borderColor} width="100px">
+                            {renderActionButton(handler)}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
 
-                <Box ml={5} p={3} border="1px solid" borderColor={borderColor} flex="1" bg="gray.50" rounded="md">
+                <Box flex="1" p={3} border="1px solid" borderColor={borderColor} bg="gray.50" rounded="md">
                   <Text fontSize="lg" fontWeight="bold" mb={2}>
                     {selectedHandler || "Select a handler"}
                   </Text>
