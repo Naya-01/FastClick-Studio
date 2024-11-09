@@ -61,7 +61,8 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
     if (handler.type.includes('r')) {  
       websocketService.getHandlers(selectedNode.id, handler.name).subscribe({
         next: (data) => {
-          setHandlerDetails(data != null ? String(data) : "No details available");
+          const formattedData = data != null ? String(data) : "No details available";
+          setHandlerDetails(<pre>{formattedData}</pre>);
         },
         error: (error) => console.error("Error fetching handler details:", error),
       });
@@ -176,7 +177,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   </Text>
                   {handlers.find((h) => h.name === selectedHandler && h.type.includes('r') && h.type.includes('w')) ? (
                     <>
-                      <Text mb={4}>{handlerDetails || "Handler details will appear here when selected"}</Text>
+                      <Box mb={4}>{handlerDetails || "Handler details will appear here when selected"}</Box>
                       
                       <Input
                         value={editableValue}
@@ -197,7 +198,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                       <Button colorScheme="green" onClick={handleWrite}>Save</Button>
                     </>
                   ) : (
-                    <Text>{handlerDetails || "Handler details will appear here when selected"}</Text>
+                    <Box>{handlerDetails || "Handler details will appear here when selected"}</Box>
                   )}
                 </Box>
               </Box>

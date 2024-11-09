@@ -14,7 +14,29 @@ export class RouterTreeModel {
   private pairs: Pair[] = [];
 
   constructor(config: string) {
+    this.parseElements(config);
     this.pairs = this.parseClickString(config);
+
+    console.log("les elements okoko ", this.elements);
+    
+  }
+
+
+  private parseElements(input: string): void {
+    const elementDefinitions = input.split(';').filter(line => line.includes('::'));
+    
+    elementDefinitions.forEach(line => {
+      const [nameAndType, configPart] = line.split('::').map(part => part.trim());
+
+      const name = nameAndType.split(/\s+/)[0].trim();
+      const typeMatch = configPart.match(/^(\w+)\s*\(/);
+      const type = typeMatch ? typeMatch[1] : '';
+      const configuration = configPart.match(/\(([^)]*)\)/)?.[1] || '';
+
+      if (!this.elements.has(name)) {
+        this.elements.set(name, new RouterElement(name, type, configuration));
+      }
+    });
   }
 
   private parseClickString(input: string): Pair[] {
