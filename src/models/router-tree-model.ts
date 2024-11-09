@@ -9,29 +9,37 @@ export class RouterElement {
   ) {}
 }
 
+interface SequenceInfo {
+  sequence: string;
+  startElement: string;
+  port: number | null;
+}
+
+
 export class RouterTreeModel {
   private elements: Map<string, RouterElement> = new Map();
   private pairs: Pair[] = [];
 
   constructor(config: string) {
     this.parseElements(config);
-    this.pairs = this.parseClickString(config);
-
-    console.log("les elements okoko ", this.elements);
+    this.pairs = this.parseClickString(config);    
+    console.log(this.elements);
     
   }
 
 
   private parseElements(input: string): void {
     const elementDefinitions = input.split(';').filter(line => line.includes('::'));
-    
+
     elementDefinitions.forEach(line => {
       const [nameAndType, configPart] = line.split('::').map(part => part.trim());
 
-      const name = nameAndType.split(/\s+/)[0].trim();
-      const typeMatch = configPart.match(/^(\w+)\s*\(/);
+      const nameMatch = nameAndType.match(/^([^\s@]+)(@\d+)?$/);
+      const name = nameMatch ? nameMatch[0].trim() : nameAndType.trim();
+
+      const typeMatch = configPart.match(/^(\w+)\s*(\((.*)\))?/);
       const type = typeMatch ? typeMatch[1] : '';
-      const configuration = configPart.match(/\(([^)]*)\)/)?.[1] || '';
+      const configuration = typeMatch && typeMatch[3] ? typeMatch[3] : '';
 
       if (!this.elements.has(name)) {
         this.elements.set(name, new RouterElement(name, type, configuration));
@@ -46,27 +54,89 @@ export class RouterTreeModel {
     if (!sequencePart.length) {
       return pairs;
     }
+    const sequences: SequenceInfo[] = [];
 
     sequencePart.forEach(sequence => {
-      const elements = sequence
-        .split('->')
-        .map(item => item.trim().replace(/(^\[\d+\])|(\[\d+\]$)/g, '').replace(/\s+/g, ''))
-        .filter(item => item);
+      const sequenceTrimmed = sequence.trim();
+      const lines = sequenceTrimmed.split('\n').map(line => line.trim()).filter(line => line);
+      const sequenceJoined = lines.join(' ');
+      const elements = sequenceJoined.split('->').map(item => item.trim()).filter(item => item);
 
-      for (let i = 0; i < elements.length - 1; i++) {
-        let currentElement = elements[i];
-        let nextElement = elements[i + 1];
-
-        if (!this.elements.has(currentElement)) {
-          this.elements.set(currentElement, new RouterElement(currentElement, '', ''));
+      if (elements.length > 0) {
+        const startToken = elements[0];
+        let startElement = startToken;
+        let port: number | null = null;
+        const portMatch = startToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
+        if (portMatch) {
+          startElement = portMatch[1].trim();
+          port = parseInt(portMatch[2], 10);
         }
-
-        const pairExists = pairs.some(pair => pair.source === currentElement && pair.destination === nextElement);
-        if (!pairExists) {
-          pairs.push(new Pair(currentElement, nextElement));
-        }
+        sequences.push({ sequence: sequenceJoined, startElement, port });
       }
     });
+
+
+    const sequencesByStartElement: { [key: string]: SequenceInfo[] } = {};
+
+    sequences.forEach(seq => {
+      if (!sequencesByStartElement[seq.startElement]) {
+        sequencesByStartElement[seq.startElement] = [];
+      }
+      sequencesByStartElement[seq.startElement].push(seq);
+    });
+
+    for (const startElement in sequencesByStartElement) {
+      const seqs = sequencesByStartElement[startElement];
+      seqs.sort((a, b) => {
+        if (a.port !== null && b.port !== null) {
+          return a.port - b.port;
+        } else if (a.port !== null) {
+          return -1;
+        } else if (b.port !== null) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+
+      seqs.forEach(seqObj => {
+        const sequence = seqObj.sequence;
+        const elements = sequence.split('->').map(item => item.trim()).filter(item => item);
+
+        for (let i = 0; i < elements.length - 1; i++) {
+          let currentElementToken = elements[i];
+          let nextElementToken = elements[i + 1];
+
+          let currentElementName = currentElementToken;
+          let match = currentElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
+          if (match) {
+            currentElementName = match[1].trim();
+          }
+
+          let nextElementName = nextElementToken;
+          match = nextElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
+          if (match) {
+            nextElementName = match[1].trim();
+          }
+
+          if (!this.elements.has(currentElementName)) {
+            this.elements.set(currentElementName, new RouterElement(currentElementName, '', ''));
+          }
+
+          if (!this.elements.has(nextElementName)) {
+            this.elements.set(nextElementName, new RouterElement(nextElementName, '', ''));
+          }
+
+          const pairExists = pairs.some(pair => 
+            pair.source === currentElementName &&
+            pair.destination === nextElementName
+          );
+          if (!pairExists) {
+            pairs.push(new Pair(currentElementName, nextElementName));
+          }
+        }
+      });
+    }
 
     return pairs;
   }

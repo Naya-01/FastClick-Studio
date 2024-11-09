@@ -5,7 +5,7 @@ export class WebsocketService {
   
   getClickConfig(): Observable<string> {
     return new Observable(observer => {
-      axios.get('/clickconfig', {
+      axios.get('/config', {
         headers: {
           'Content-Type': 'text/plain'
         }
