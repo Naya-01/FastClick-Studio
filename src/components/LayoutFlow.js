@@ -27,6 +27,7 @@ const LayoutFlow = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [router, setRouter] = useState(null);
   const reactFlowWrapper = useRef(null);
 
   const webSocketService = new WebsocketService();
@@ -36,6 +37,7 @@ const LayoutFlow = () => {
     try {
       const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
         const routerTreeModel = new RouterTreeModel(configData);
+        setRouter(routerTreeModel);
         const pairs = routerTreeModel.getAllPairs();
         const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
         setNodes(layoutedNodes);
@@ -86,6 +88,43 @@ const LayoutFlow = () => {
     }
   };
 
+  const generateClickConfig = () => {
+    const nodesConfig = nodes
+    .map(node => {
+      const element = router.getElement(node.id);
+      if (element) {
+        return `${node.id} :: ${element.type}(${element.configuration || ''});`;
+      } else {
+        return `${node.id} :: Node;`;
+      }
+    })
+    .join('\n');
+
+  const edgeMap = new Map();
+
+  edges.forEach(edge => {
+    if (!edgeMap.has(edge.source)) {
+      edgeMap.set(edge.source, []);
+    }
+    edgeMap.get(edge.source).push(edge);
+  });
+
+  const edgesConfig = Array.from(edgeMap.entries())
+    .map(([source, edges]) => {
+      if (edges.length > 1) {
+        return edges
+          .map((edge, index) => `${source}[${index}] -> ${edge.target};`)
+          .join('\n');
+      } else {
+        return `${source} -> ${edges[0].target};`;
+      }
+    })
+    .join('\n');
+    
+      console.log(nodesConfig);
+      console.log(edgesConfig);
+  };
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -115,6 +154,17 @@ const LayoutFlow = () => {
           zIndex="10"
         >
           Download Graph
+        </Button>
+
+        <Button
+          onClick={generateClickConfig}
+          position="absolute"
+          top="10px"
+          right="500px"
+          colorScheme="green"
+          zIndex="10"
+        >
+          Save as .click
         </Button>
       </Box>
 
