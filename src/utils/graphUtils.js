@@ -2,6 +2,14 @@ import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
 
+export const calculateNodeWidth = (label, inputs, outputs) => {
+  const baseWidth = 100;
+  const textWidth = label.length * 10;
+  const portWidth = 30 * Math.max(inputs, outputs);
+
+  return Math.max(baseWidth, textWidth, baseWidth + portWidth);
+};
+
 export const handleData = (pairs) => {
   const nodeMap = new Map();
   const outputHandleCounter = {};
@@ -21,22 +29,27 @@ export const handleData = (pairs) => {
     }
   });
 
-  const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => ({
-    id: nodeData.id,
-    data: {
-      label: nodeData.id,
-      inputs: nodeData.inputs,
-      outputs: nodeData.outputs,
-    },
-    position: { x: 0, y: 0 },
-    type: 'dynamicHandlesNode',
-    style: {
-      border: '1px solid #004085',
-      padding: 10,
-      borderRadius: 5,
-      backgroundColor: '#cce5ff',
-    },
-  }));
+  const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => {  
+    const nodeWidth = calculateNodeWidth(nodeData.id,nodeData.inputs, nodeData.outputs);
+  
+    return {
+      id: nodeData.id,
+      data: {
+        label: nodeData.id,
+        inputs: nodeData.inputs,
+        outputs: nodeData.outputs,
+      },
+      position: { x: 0, y: 0 },
+      type: 'dynamicHandlesNode',
+      style: {
+        border: '1px solid #004085',
+        padding: 10,
+        borderRadius: 5,
+        backgroundColor: '#cce5ff',
+        width: `${nodeWidth}px`,
+      },
+    };
+  });
 
   Object.keys(outputHandleCounter).forEach((key) => (outputHandleCounter[key] = 0));
   Object.keys(inputHandleCounter).forEach((key) => (inputHandleCounter[key] = 0));

@@ -7,10 +7,11 @@ import {
   Background,
   Controls,
   MiniMap,
+  addEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ChakraProvider, Box, Button } from '@chakra-ui/react';
-import { handleData } from '../utils/graphUtils';
+import { ChakraProvider, Box, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select } from '@chakra-ui/react';
+import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
 import NodeDetailsModal from './NodeDetailsModal';
 import DynamicHandlesNode from './DynamicHandlesNode';
@@ -28,6 +29,8 @@ const LayoutFlow = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [router, setRouter] = useState(null);
+  const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
+  const [newNode, setNewNode] = useState({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
   const reactFlowWrapper = useRef(null);
 
   const webSocketService = new WebsocketService();
@@ -92,10 +95,12 @@ const LayoutFlow = () => {
     const nodesConfig = nodes
     .map(node => {
       const element = router.getElement(node.id);
+      //const element = false;
+      console.log("node", node);
       if (element) {
         return `${node.id} :: ${element.type}(${element.configuration || ''});`;
       } else {
-        return `${node.id} :: Node;`;
+        return `${node.id} :: ${node.data.type || 'Node'}(${node.data.configuration || ''});`;
       }
     })
     .join('\n');
@@ -125,6 +130,38 @@ const LayoutFlow = () => {
       console.log(edgesConfig);
   };
 
+  const handleAddNode = () => {
+    const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
+  
+    const newNodeConfig = {
+      id: newNode.id,
+      data: {
+        label: newNode.id,
+        inputs: newNode.inputs,
+        outputs: newNode.outputs,
+        type: newNode.type,
+        configuration: newNode.configuration,
+      },
+      position: { x: 250, y: 150 },
+      type: 'dynamicHandlesNode',
+      style: {
+        border: '1px solid #28a745',
+        padding: 10,
+        borderRadius: 5,
+        backgroundColor: '#d4edda',
+        width: `${newNodeWidth}px`, 
+      },
+    };
+  
+    setNodes((prevNodes) => [...prevNodes, newNodeConfig]);
+    setIsAddNodeModalOpen(false);
+    setNewNode({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
+  };
+
+  const onConnect = (connection) => {
+    setEdges((eds) => addEdge(connection, eds));
+  };
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -136,6 +173,7 @@ const LayoutFlow = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
+            onConnect={onConnect} 
             fitView
             style={{ width: '100%', height: '100%' }}
           >
@@ -166,7 +204,65 @@ const LayoutFlow = () => {
         >
           Save as .click
         </Button>
+
+        <Button
+          onClick={() => setIsAddNodeModalOpen(true)}
+          position="absolute"
+          top="10px"
+          right="700px"
+          colorScheme="teal"
+          zIndex="10"
+        >
+          Add Node
+        </Button>
       </Box>
+
+            {/* Modal for Adding Node */}
+            <Modal isOpen={isAddNodeModalOpen} onClose={() => setIsAddNodeModalOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add New Node</ModalHeader>
+          <ModalBody>
+            <Input
+              placeholder="Node Name"
+              value={newNode.id}
+              onChange={(e) => setNewNode({ ...newNode, id: e.target.value })}
+              mb={3}
+            />
+            <Input
+              placeholder="Node Class"
+              value={newNode.type}
+              onChange={(e) => setNewNode({ ...newNode, type: e.target.value })}
+              mb={3}
+            />
+            <Input
+              placeholder="Configuration"
+              value={newNode.configuration}
+              onChange={(e) => setNewNode({ ...newNode, configuration: e.target.value })}
+              mb={3}
+            />
+            <Input
+              type="number"
+              placeholder="Inputs"
+              value={newNode.inputs}
+              onChange={(e) => setNewNode({ ...newNode, inputs: Number(e.target.value) })}
+              mb={3}
+            />
+            <Input
+              type="number"
+              placeholder="Outputs"
+              value={newNode.outputs}
+              onChange={(e) => setNewNode({ ...newNode, outputs: Number(e.target.value) })}
+              mb={3}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleAddNode}>
+              Add Node
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} />
     </ChakraProvider>
