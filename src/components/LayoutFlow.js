@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback  } from 'react';
 import { toSvg } from 'html-to-image';
 import {
   ReactFlow,
@@ -18,6 +18,7 @@ import DynamicHandlesNode from './DynamicHandlesNode';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
+import ContextMenu from './ContextMenu';
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -29,6 +30,7 @@ const LayoutFlow = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [router, setRouter] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const [newNode, setNewNode] = useState({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
   const reactFlowWrapper = useRef(null);
@@ -162,6 +164,44 @@ const LayoutFlow = () => {
     setEdges((eds) => addEdge(connection, eds));
   };
 
+  const onNodeContextMenu = useCallback(
+    (event, node) => {
+      event.preventDefault();
+      const wrapperBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+      setContextMenu({
+        id: node.id,
+        type: 'node',
+        top: event.clientY < wrapperBounds.height - 100 ? event.clientY : null,
+        left: event.clientX < wrapperBounds.width - 100 ? event.clientX : null,
+        bottom: event.clientY >= wrapperBounds.height - 100 ? wrapperBounds.height - event.clientY : null,
+        right: event.clientX >= wrapperBounds.width - 100 ? wrapperBounds.width - event.clientX : null,
+      });
+    },
+    [setContextMenu]
+  );
+
+  const onEdgeContextMenu = useCallback(
+    (event, edge) => {
+      event.preventDefault();
+      const wrapperBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+      setContextMenu({
+        id: edge.id,
+        type: 'edge',
+        top: event.clientY < wrapperBounds.height - 100 ? event.clientY : null,
+        left: event.clientX < wrapperBounds.width - 100 ? event.clientX : null,
+        bottom: event.clientY >= wrapperBounds.height - 100 ? wrapperBounds.height - event.clientY : null,
+        right: event.clientX >= wrapperBounds.width - 100 ? wrapperBounds.width - event.clientX : null,
+      });
+    },
+    [setContextMenu]
+  );
+
+  const onPaneClick = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -173,13 +213,17 @@ const LayoutFlow = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
-            onConnect={onConnect} 
+            onConnect={onConnect}
+            onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onPaneClick={onPaneClick}
             fitView
             style={{ width: '100%', height: '100%' }}
           >
             <Background color="#f0f0f0" gap={16} />
             <Controls showInteractive={false} />
             <MiniMap />
+            {contextMenu && <ContextMenu {...contextMenu} setNodes={setNodes} setEdges={setEdges} setContextMenu={setContextMenu}/>}
           </ReactFlow>
         </Box>
 
