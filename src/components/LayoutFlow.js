@@ -8,6 +8,7 @@ import {
   Controls,
   MiniMap,
   addEdge,
+  useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { ChakraProvider, Box, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select } from '@chakra-ui/react';
@@ -34,25 +35,26 @@ const LayoutFlow = () => {
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const [newNode, setNewNode] = useState({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
   const reactFlowWrapper = useRef(null);
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const webSocketService = new WebsocketService();
 
 
   const fetchData = () => {
     try {
-      const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
-        const routerTreeModel = new RouterTreeModel(configData);
-        setRouter(routerTreeModel);
-        const pairs = routerTreeModel.getAllPairs();
-        const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
-        });
-      return () => subscription.unsubscribe();
+      // const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
+      //   const routerTreeModel = new RouterTreeModel(configData);
+      //   setRouter(routerTreeModel);
+      //   const pairs = routerTreeModel.getAllPairs();
+      //   const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
+      //   setNodes(layoutedNodes);
+      //   setEdges(layoutedEdges);
+      //   });
+      // return () => subscription.unsubscribe();
 
-      // const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
-      // setNodes(layoutedNodes);
-      // setEdges(layoutedEdges);
+      const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
     } catch (error) {
       console.error("Failed to connect to Click, using fallback data", error);
     }
@@ -96,8 +98,8 @@ const LayoutFlow = () => {
   const generateClickConfig = () => {
     const nodesConfig = nodes
     .map(node => {
-      const element = router.getElement(node.id);
-      //const element = false;
+      // const element = router.getElement(node.id);
+      const element = false;
       console.log("node", node);
       if (element) {
         return `${node.id} :: ${element.type}(${element.configuration || ''});`;
@@ -161,8 +163,39 @@ const LayoutFlow = () => {
   };
 
   const onConnect = (connection) => {
-    setEdges((eds) => addEdge(connection, eds));
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    const targetNode = nodes.find((node) => node.id === connection.target);
+
+    const sourceHandleIndex = parseInt(connection.sourceHandle.split('-')[2], 10);
+    const targetHandleIndex = parseInt(connection.targetHandle.split('-')[2], 10);
+
+    if (
+      sourceHandleIndex >= sourceNode.data.outputs ||
+      targetHandleIndex >= targetNode.data.inputs
+    ) {
+      console.warn('Handle index out of range');
+      return;
+    }
+
+    setEdges((existingEdges) => {
+      const isSourcePortConnected = existingEdges.some(
+        (edge) =>
+          edge.source === connection.source && edge.sourceHandle === connection.sourceHandle
+      );
+
+      const isTargetPortConnected = existingEdges.some(
+        (edge) =>
+          edge.target === connection.target && edge.targetHandle === connection.targetHandle
+      );
+
+      if (isSourcePortConnected || isTargetPortConnected) {
+        return existingEdges;
+      }
+
+      return addEdge(connection, existingEdges);
+    });
   };
+  
 
   const onNodeContextMenu = useCallback(
     (event, node) => {
@@ -202,6 +235,25 @@ const LayoutFlow = () => {
     setContextMenu(null);
   }, []);
 
+  const updateNodeHandles = (nodeId, newInputs, newOutputs) => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              inputs: newInputs,
+              outputs: newOutputs,
+            },
+          };
+        }
+        return node;
+      })
+    );
+    updateNodeInternals(nodeId);
+  };
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -223,7 +275,14 @@ const LayoutFlow = () => {
             <Background color="#f0f0f0" gap={16} />
             <Controls showInteractive={false} />
             <MiniMap />
-            {contextMenu && <ContextMenu {...contextMenu} setNodes={setNodes} setEdges={setEdges} setContextMenu={setContextMenu}/>}
+            {contextMenu && <ContextMenu 
+            {...contextMenu} 
+            nodes={nodes}
+            setNodes={setNodes} 
+            setEdges={setEdges} 
+            setContextMenu={setContextMenu}
+            updateNodeHandles={updateNodeHandles}
+            />}
           </ReactFlow>
         </Box>
 

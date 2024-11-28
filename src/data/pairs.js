@@ -13,5 +13,6 @@ export const affiche = [
 export const lespairs = [
   new Pair('FromDevice@1', 'Print@2'),
   new Pair('Print@2', 'Queue@3'),
+  new Pair('Print@2', 'Discard@5'),
   new Pair('Queue@3', 'ToDevice@4'),
 ];
