@@ -11,7 +11,7 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ChakraProvider, Box, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select } from '@chakra-ui/react';
+import { ChakraProvider, Box, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
 import NodeDetailsModal from './NodeDetailsModal';
@@ -50,7 +50,6 @@ const LayoutFlow = () => {
         handleData(pairs).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
           setNodes(layoutedNodes);
           setEdges(layoutedEdges);
-          {}
         });
 
         });

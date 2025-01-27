@@ -1,4 +1,3 @@
-import { color } from '@chakra-ui/react';
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
