@@ -2,22 +2,21 @@ import ELK from 'elkjs/lib/elk.bundled.js';
 
 const elk = new ELK();
 
-export const getLayoutedElements = (nodes, edges, direction = 'TB') => {
-  const elkDirectionMap = {
-    TB: 'DOWN',
-    LR: 'RIGHT',
-  };
+export const getLayoutedElements = (nodes, edges, direction = 'DOWN') => {
+
+  const isHorizontal = direction === 'RIGHT' || direction === 'LEFT';
 
   const elkGraph = {
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': elkDirectionMap[direction] || 'DOWN',
+      'elk.direction': direction,
       'elk.layered.spacing.nodeNodeBetweenLayers': '100',
       'elk.spacing.nodeNode': '150',
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.mergeEdges': 'false',
+  
     },
     children: nodes.map((node) => ({
       id: node.id,
@@ -39,6 +38,9 @@ export const getLayoutedElements = (nodes, edges, direction = 'TB') => {
           x: nodeLayout.x,
           y: nodeLayout.y,
         };
+
+        node.targetPosition = isHorizontal ? 'left' : 'top';
+        node.sourcePosition = isHorizontal ? 'right' : 'bottom';
       }
       node.draggable = true;
       return node;
