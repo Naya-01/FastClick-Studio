@@ -5,7 +5,7 @@ export class WebsocketService {
   
   getClickConfig(): Observable<string> {
     return new Observable(observer => {
-      axios.get('/clickconfig', {
+      axios.get('/config', {
         headers: {
           'Content-Type': 'text/plain'
         }
@@ -90,5 +90,21 @@ export class WebsocketService {
         .catch(error => observer.error(error));
     });
   }
+
+  updateClickConfig(newConfig: string): Observable<string> {
+    return new Observable(observer => {
+      axios.post('/hotconfig', newConfig, {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+  
 
 }

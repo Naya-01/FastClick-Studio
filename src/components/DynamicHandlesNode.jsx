@@ -1,8 +1,13 @@
-import React from 'react';
-import { Handle, Position } from '@xyflow/react';
+import React, { useEffect } from 'react';
+import { Handle, Position, useUpdateNodeInternals  } from '@xyflow/react';
 
 const DynamicHandlesNode = ({ id, data }) => {
   const { label, inputs = 0, outputs = 0 } = data;
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [inputs, outputs, id, updateNodeInternals]);
 
   const inputHandles = [];
   for (let i = 0; i < inputs; i++) {
