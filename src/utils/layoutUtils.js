@@ -1,36 +1,51 @@
-import dagre from '@dagrejs/dagre';
+import ELK from 'elkjs/lib/elk.bundled.js';
 
-const nodeWidth = 172;
-const nodeHeight = 20;
+const elk = new ELK();
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
+export const getLayoutedElements = (nodes, edges, direction = 'DOWN') => {
 
-export const getLayoutedElements = (nodes, edges, direction = 'TB') => {
-  const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction, ranksep: 75 });
+  const isHorizontal = direction === 'RIGHT' || direction === 'LEFT';
 
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  const elkGraph = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': direction,
+      'elk.layered.spacing.nodeNodeBetweenLayers': '100',
+      'elk.spacing.nodeNode': '150',
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.mergeEdges': 'false',
+  
+    },
+    children: nodes.map((node) => ({
+      id: node.id,
+      width: parseFloat(node.style?.width) || 172,
+      height: 50,
+    })),
+    edges: edges.map((edge) => ({
+      id: edge.id,
+      sources: [edge.source],
+      targets: [edge.target],
+    })),
+  };
+
+  return elk.layout(elkGraph).then((layout) => {
+    const layoutedNodes = nodes.map((node) => {
+      const nodeLayout = layout.children.find((n) => n.id === node.id);
+      if (nodeLayout) {
+        node.position = {
+          x: nodeLayout.x,
+          y: nodeLayout.y,
+        };
+
+        node.targetPosition = isHorizontal ? 'left' : 'top';
+        node.sourcePosition = isHorizontal ? 'right' : 'bottom';
+      }
+      node.draggable = true;
+      return node;
+    });
+
+    return { nodes: layoutedNodes, edges };
   });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2,
-    };
-    node.targetPosition = isHorizontal ? 'left' : 'top';
-    node.sourcePosition = isHorizontal ? 'right' : 'bottom';
-    node.draggable = true;
-    return node;
-  });
-
-  return { nodes: layoutedNodes, edges };
 };

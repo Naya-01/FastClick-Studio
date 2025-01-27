@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals  } from '@xyflow/react';
 
-const DynamicHandlesNode = ({ id, data }) => {
+const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
   const { label, inputs = 0, outputs = 0 } = data;
   const updateNodeInternals = useUpdateNodeInternals();
+
+  const isHorizontal = sourcePosition === 'right' || targetPosition === 'left';
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -16,16 +18,31 @@ const DynamicHandlesNode = ({ id, data }) => {
         key={`input-handle-${i}`}
         type="target"
         id={`input-handle-${i}`}
-        position={Position.Top}
+        position={targetPosition}
         style={{
           width: '15px',
           height: '8px',
           background: '#555',
           borderRadius: 0,
           position: 'absolute',
-          left: `${(i + 1) * (100 / (inputs + 1))}%`,
-          transform: 'translateX(-50%)',
-          top: '-10px',
+          ...(isHorizontal ? {
+            ...(targetPosition === 'left' || targetPosition === 'right'
+              ? {
+                  top: `${(i + 1) * (100 / (inputs + 1))}%`,
+                  transform: 'translateY(-50%)',
+                }
+              : {
+                  right: `${(i + 1) * (100 / (inputs + 1))}%`,
+                  transform: 'translateX(-50%)',
+                }),
+          }
+          :
+          {
+            left: `${(i + 1) * (100 / (inputs + 1))}%`,
+            transform: 'translateX(-50%)',
+            top: '-10px',
+          }
+        ),
         }}
       />
     );
@@ -38,16 +55,31 @@ const DynamicHandlesNode = ({ id, data }) => {
         key={`output-handle-${i}`}
         type="source"
         id={`output-handle-${i}`}
-        position={Position.Bottom}
+        position={sourcePosition}
         style={{
           width: '15px',
           height: '8px',
           background: '#555',
           borderRadius: 0,
           position: 'absolute',
-          left: `${(i + 1) * (100 / (outputs + 1))}%`,
-          transform: 'translateX(-50%)',
-          bottom: '-10px',
+          ...(isHorizontal ? {
+            ...(sourcePosition === 'left' || sourcePosition === 'right'
+              ? {
+                  top: `${(i + 1) * (100 / (outputs + 1))}%`,
+                  transform: 'translateY(-50%)',
+                }
+              : {
+                  left: `${(i + 1) * (100 / (outputs + 1))}%`,
+                  transform: 'translateX(-50%)',
+                }),
+          }
+          :
+          {
+            left: `${(i + 1) * (100 / (outputs + 1))}%`,
+            transform: 'translateX(-50%)',
+            bottom: '-10px',
+          }
+        )
         }}
       />
     );

@@ -78,8 +78,15 @@ export const handleData = (pairs) => {
     animated: true,
     markerEnd: {
       type: MarkerType.ArrowClosed,
+      color: '#004085',
     },
+    style: { stroke: '#004085', strokeWidth: 2 },
+    zIndex: 2000,
   }));
+  
+  let resp = getLayoutedElements(parsedNodes, parsedEdges).then((layout) => {
+    return layout;
+  });
 
-  return getLayoutedElements(parsedNodes, parsedEdges);
+  return resp;
 };
