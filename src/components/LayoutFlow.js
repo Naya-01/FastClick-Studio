@@ -46,9 +46,13 @@ const LayoutFlow = () => {
         const routerTreeModel = new RouterTreeModel(configData);
         setRouter(routerTreeModel);
         const pairs = routerTreeModel.getAllPairs();
-        const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(pairs);
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
+
+        handleData(pairs).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+          setNodes(layoutedNodes);
+          setEdges(layoutedEdges);
+          {}
+        });
+
         });
       return () => subscription.unsubscribe();
 
