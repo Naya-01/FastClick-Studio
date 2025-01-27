@@ -4,7 +4,7 @@ import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
-  const textWidth = label.length * 10;
+  const textWidth = label.length * 13;
   const portWidth = 30 * Math.max(inputs, outputs);
 
   return Math.max(baseWidth, textWidth, baseWidth + portWidth);
@@ -22,10 +22,12 @@ export const handleData = (pairs) => {
       nodeMap.get(pair.source).outputs += 1;
     }
 
-    if (!nodeMap.has(pair.destination)) {
-      nodeMap.set(pair.destination, { id: pair.destination, inputs: 1, outputs: 0 });
-    } else {
-      nodeMap.get(pair.destination).inputs += 1;
+    if (pair.destination !== null) {
+      if (!nodeMap.has(pair.destination)) {
+        nodeMap.set(pair.destination, { id: pair.destination, inputs: 1, outputs: 0 });
+      } else {
+        nodeMap.get(pair.destination).inputs += 1;
+      }
     }
   });
 
@@ -64,7 +66,9 @@ export const handleData = (pairs) => {
     return inputHandleCounter[nodeId]++;
   };
 
-  const parsedEdges = pairs.map((pair, index) => ({
+  const parsedEdges = pairs
+  .filter((pair) => pair.destination !== null)
+  .map((pair, index) => ({
     id: `e${pair.source}-${pair.destination}-${index}`,
     source: pair.source,
     target: pair.destination,

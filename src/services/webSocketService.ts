@@ -91,4 +91,20 @@ export class WebsocketService {
     });
   }
 
+  updateClickConfig(newConfig: string): Observable<string> {
+    return new Observable(observer => {
+      axios.post('/hotconfig', newConfig, {
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+  
+
 }

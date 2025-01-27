@@ -1,3 +1,4 @@
+import { lespairs } from "../data/pairs";
 import { Pair } from "./pair";
 
 export class RouterElement {
@@ -23,8 +24,6 @@ export class RouterTreeModel {
   constructor(config: string) {
     this.parseElements(config);
     this.pairs = this.parseClickString(config);    
-    console.log(this.elements);
-    
   }
 
 
@@ -49,19 +48,33 @@ export class RouterTreeModel {
 
   private parseClickString(input: string): Pair[] {
     const pairs: Pair[] = [];
+    const allElements = new Set<string>();
     const sequencePart = input.split(';').filter(part => part.includes('->'));
-
+  
     if (!sequencePart.length) {
       return pairs;
     }
+  
+    const elementDefinitions = input.split(';')
+                                      .map(part => part.trim())
+                                      .filter(part => part.includes('::'));
+    
+    elementDefinitions.forEach(def => {
+      const match = def.match(/^(\S+)\s*::\s*(\S+)(?:\((.*?)\))?$/);
+      if (match) {
+        const elementName = match[1].trim();
+        allElements.add(elementName);
+      }
+    });
+  
     const sequences: SequenceInfo[] = [];
-
+  
     sequencePart.forEach(sequence => {
       const sequenceTrimmed = sequence.trim();
       const lines = sequenceTrimmed.split('\n').map(line => line.trim()).filter(line => line);
       const sequenceJoined = lines.join(' ');
       const elements = sequenceJoined.split('->').map(item => item.trim()).filter(item => item);
-
+  
       if (elements.length > 0) {
         const startToken = elements[0];
         let startElement = startToken;
@@ -74,17 +87,16 @@ export class RouterTreeModel {
         sequences.push({ sequence: sequenceJoined, startElement, port });
       }
     });
-
-
+  
     const sequencesByStartElement: { [key: string]: SequenceInfo[] } = {};
-
+  
     sequences.forEach(seq => {
       if (!sequencesByStartElement[seq.startElement]) {
         sequencesByStartElement[seq.startElement] = [];
       }
       sequencesByStartElement[seq.startElement].push(seq);
     });
-
+  
     for (const startElement in sequencesByStartElement) {
       const seqs = sequencesByStartElement[startElement];
       seqs.sort((a, b) => {
@@ -98,35 +110,38 @@ export class RouterTreeModel {
           return 0;
         }
       });
-
+  
       seqs.forEach(seqObj => {
         const sequence = seqObj.sequence;
         const elements = sequence.split('->').map(item => item.trim()).filter(item => item);
-
+  
         for (let i = 0; i < elements.length - 1; i++) {
           let currentElementToken = elements[i];
           let nextElementToken = elements[i + 1];
-
+  
           let currentElementName = currentElementToken;
           let match = currentElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
           if (match) {
             currentElementName = match[1].trim();
           }
-
+  
           let nextElementName = nextElementToken;
           match = nextElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
           if (match) {
             nextElementName = match[1].trim();
           }
-
+  
+          allElements.add(currentElementName);
+          allElements.add(nextElementName);
+  
           if (!this.elements.has(currentElementName)) {
             this.elements.set(currentElementName, new RouterElement(currentElementName, '', ''));
           }
-
+  
           if (!this.elements.has(nextElementName)) {
             this.elements.set(nextElementName, new RouterElement(nextElementName, '', ''));
           }
-
+  
           const pairExists = pairs.some(pair => 
             pair.source === currentElementName &&
             pair.destination === nextElementName
@@ -137,7 +152,16 @@ export class RouterTreeModel {
         }
       });
     }
-
+  
+    allElements.forEach(elementName => {
+      const isSource = pairs.some(pair => pair.source === elementName);
+      const isTarget = pairs.some(pair => pair.destination === elementName);
+  
+      if (!isSource && !isTarget) {
+        pairs.push(new Pair(elementName, null));
+      }
+    });
+  
     return pairs;
   }
 
