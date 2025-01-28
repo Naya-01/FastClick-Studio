@@ -17,17 +17,17 @@ export const handleData = (pairs) => {
 
   pairs.forEach((pair) => {
     if (!nodeMap.has(pair.source)) {
-      nodeMap.set(pair.source, { id: pair.source, inputs: 0, outputs: 1 });
-    } else {
-      nodeMap.get(pair.source).outputs += 1;
+      nodeMap.set(pair.source, { id: pair.source, inputs: 0, outputs: 0 });
     }
 
     if (pair.destination !== null) {
+      nodeMap.get(pair.source).outputs += 1;
+      
       if (!nodeMap.has(pair.destination)) {
-        nodeMap.set(pair.destination, { id: pair.destination, inputs: 1, outputs: 0 });
-      } else {
-        nodeMap.get(pair.destination).inputs += 1;
+        nodeMap.set(pair.destination, { id: pair.destination, inputs: 0, outputs: 0 });
       }
+
+      nodeMap.get(pair.destination).inputs += 1;
     }
   });
 
