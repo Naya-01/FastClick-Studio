@@ -21,6 +21,10 @@ import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
 import ContextMenu from './ContextMenu';
 import AddNodeModal from './AddNodeModal';
+import { useGraphOperations } from '../hooks/useGraphOperations';
+import { useClickConfig } from '../hooks/useClickConfig';
+import { GraphControls } from './GraphControls';
+import { DragPanel } from './DragPanel';
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -39,6 +43,15 @@ const LayoutFlow = () => {
   const [newNodePosition, setNewNodePosition] = useState({ x: 0, y: 0 });
 
   const webSocketService = new WebsocketService();
+
+  const { updateNodeHandles, onConnect } = useGraphOperations(
+    nodes, 
+    setNodes, 
+    setEdges, 
+    updateNodeInternals
+  );
+
+  const { generateClickConfig } = useClickConfig(nodes, edges, router);
 
 
   const fetchData = () => {
@@ -94,56 +107,6 @@ const LayoutFlow = () => {
     }
   };
 
-  const generateClickConfig = () => {
-    const nodesConfig = nodes
-      .map(node => {
-        const element = router.getElement(node.id);
-        //const element = false;
-        if (element) {
-          return `${node.id} :: ${element.type}(${element.configuration || ''});`;
-        } else {
-          return `${node.id} :: ${node.data.type || 'Node'}(${node.data.configuration || ''});`;
-        }
-      })
-      .join('\n');
-
-    const edgeMap = new Map();
-
-    edges.forEach(edge => {
-      if (!edgeMap.has(edge.source)) {
-        edgeMap.set(edge.source, []);
-      }
-      edgeMap.get(edge.source).push(edge);
-    });
-
-    const edgesConfig = Array.from(edgeMap.entries())
-      .map(([source, edges]) => {
-        if (edges.length > 1) {
-          return edges
-            .map((edge, index) => `${source}[${index}] -> ${edge.target};`)
-            .join('\n');
-        } else {
-          return `${source} -> ${edges[0].target};`;
-        }
-      })
-      .join('\n');
-    
-    const config = `${nodesConfig}\n${edgesConfig}`;
-  
-
-    webSocketService.updateClickConfig(config).subscribe({
-      next: (resp) => {
-        console.log("Configuration updated successfully:", resp);
-      },
-      error: (err) => {
-        console.error("Failed to update configuration:", err);
-      },
-      complete: () => {
-        console.log("Configuration update complete.");
-      }
-    });
-  };
-
   const handleAddNode = (newNode) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
   
@@ -168,40 +131,6 @@ const LayoutFlow = () => {
     };
   
     setNodes((prevNodes) => [...prevNodes, newNodeConfig]);
-  };
-
-  const onConnect = (connection) => {
-    const sourceNode = nodes.find((node) => node.id === connection.source);
-    const targetNode = nodes.find((node) => node.id === connection.target);
-
-    const sourceHandleIndex = parseInt(connection.sourceHandle.split('-')[2], 10);
-    const targetHandleIndex = parseInt(connection.targetHandle.split('-')[2], 10);
-
-    if (
-      sourceHandleIndex >= sourceNode.data.outputs ||
-      targetHandleIndex >= targetNode.data.inputs
-    ) {
-      console.warn('Handle index out of range');
-      return;
-    }
-
-    setEdges((existingEdges) => {
-      const isSourcePortConnected = existingEdges.some(
-        (edge) =>
-          edge.source === connection.source && edge.sourceHandle === connection.sourceHandle
-      );
-
-      const isTargetPortConnected = existingEdges.some(
-        (edge) =>
-          edge.target === connection.target && edge.targetHandle === connection.targetHandle
-      );
-
-      if (isSourcePortConnected || isTargetPortConnected) {
-        return existingEdges;
-      }
-
-      return addEdge(connection, existingEdges);
-    });
   };
 
   const getAdjustedCoordinates = (event, wrapperRef) => {
@@ -241,25 +170,6 @@ const LayoutFlow = () => {
     setContextMenu(null);
   }, []);
 
-  const updateNodeHandles = (nodeId, newInputs, newOutputs) => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              inputs: newInputs,
-              outputs: newOutputs,
-            },
-          };
-        }
-        return node;
-      })
-    );
-    updateNodeInternals(nodeId);
-  };
-
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -280,30 +190,7 @@ const LayoutFlow = () => {
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
-      <Box
-          width="250px"
-          bg="#f0f0f0"
-          borderRight="1px solid #ccc"
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          py="10px"
-          zIndex="1000"
-        >
-          <Box
-            draggable
-            onDragStart={(event) => event.dataTransfer.setData('application/reactflow', 'NewNode')}
-            style={{
-              border: '1px dashed #ccc',
-              padding: '10px',
-              marginBottom: '10px',
-              cursor: 'grab',
-              backgroundColor: '#fff',
-            }}
-          >
-            Drag Node
-          </Box>
-        </Box>
+        <DragPanel />
         <NodeListSidebar nodes={nodes} onNodeClick={openModal} />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
           <ReactFlow
@@ -335,27 +222,10 @@ const LayoutFlow = () => {
           </ReactFlow>
         </Box>
 
-        <Button
-          onClick={handleDownloadImage}
-          position="absolute"
-          top="10px"
-          right="270px"
-          colorScheme="blue"
-          zIndex="10"
-        >
-          Download Graph
-        </Button>
-
-        <Button
-          onClick={generateClickConfig}
-          position="absolute"
-          top="10px"
-          right="500px"
-          colorScheme="green"
-          zIndex="10"
-        >
-          Save as .click
-        </Button>
+        <GraphControls 
+          onDownloadImage={handleDownloadImage}
+          onGenerateConfig={generateClickConfig}
+        />
       </Box>
 
       <AddNodeModal 
