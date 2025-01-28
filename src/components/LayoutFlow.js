@@ -36,6 +36,7 @@ const LayoutFlow = () => {
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const reactFlowWrapper = useRef(null);
   const updateNodeInternals = useUpdateNodeInternals();
+  const [newNodePosition, setNewNodePosition] = useState({ x: 0, y: 0 });
 
   const webSocketService = new WebsocketService();
 
@@ -155,7 +156,7 @@ const LayoutFlow = () => {
         type: newNode.type,
         configuration: newNode.configuration,
       },
-      position: { x: 250, y: 150 },
+      position: newNodePosition,
       type: 'dynamicHandlesNode',
       style: {
         border: '1px solid #28a745',
@@ -202,41 +203,39 @@ const LayoutFlow = () => {
       return addEdge(connection, existingEdges);
     });
   };
+
+  const getAdjustedCoordinates = (event, wrapperRef) => {
+    const wrapperBounds = wrapperRef.current.getBoundingClientRect();
+    const transform = wrapperRef.current.querySelector('.react-flow__viewport').style.transform;
+  
+    const match = transform.match(/matrix\(([^,]+),[^,]+,[^,]+,[^,]+,([^,]+),([^,]+)\)/);
+    const scale = match ? parseFloat(match[1]) : 1;
+    const offsetX = match ? parseFloat(match[2]) : 0;
+    const offsetY = match ? parseFloat(match[3]) : 0;
+  
+    const adjustedX = (event.clientX - wrapperBounds.left - offsetX) / scale;
+    const adjustedY = (event.clientY - wrapperBounds.top - offsetY) / scale;
+  
+    return { x: adjustedX, y: adjustedY };
+  };
   
 
-  const onNodeContextMenu = useCallback(
-    (event, node) => {
+  const onContextMenu = useCallback(
+    (event, element, type) => {
       event.preventDefault();
-      const wrapperBounds = reactFlowWrapper.current.getBoundingClientRect();
-
+  
+      const { x, y } = getAdjustedCoordinates(event, reactFlowWrapper);
+  
       setContextMenu({
-        id: node.id,
-        type: 'node',
-        top: event.clientY < wrapperBounds.height - 100 ? event.clientY : null,
-        left: event.clientX < wrapperBounds.width - 100 ? event.clientX : null,
-        bottom: event.clientY >= wrapperBounds.height - 100 ? wrapperBounds.height - event.clientY : null,
-        right: event.clientX >= wrapperBounds.width - 100 ? wrapperBounds.width - event.clientX : null,
+        id: element.id,
+        type,
+        top: y,
+        left: x,
       });
     },
     [setContextMenu]
   );
-
-  const onEdgeContextMenu = useCallback(
-    (event, edge) => {
-      event.preventDefault();
-      const wrapperBounds = reactFlowWrapper.current.getBoundingClientRect();
-
-      setContextMenu({
-        id: edge.id,
-        type: 'edge',
-        top: event.clientY < wrapperBounds.height - 100 ? event.clientY : null,
-        left: event.clientX < wrapperBounds.width - 100 ? event.clientX : null,
-        bottom: event.clientY >= wrapperBounds.height - 100 ? wrapperBounds.height - event.clientY : null,
-        right: event.clientX >= wrapperBounds.width - 100 ? wrapperBounds.width - event.clientX : null,
-      });
-    },
-    [setContextMenu]
-  );
+  
 
   const onPaneClick = useCallback(() => {
     setContextMenu(null);
@@ -261,9 +260,50 @@ const LayoutFlow = () => {
     updateNodeInternals(nodeId);
   };
 
+  const onDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+
+      const { x, y } = getAdjustedCoordinates(event, reactFlowWrapper);
+
+      setNewNodePosition({ x: x, y: y }); 
+      setIsAddNodeModalOpen(true);
+    },
+    [setNewNodePosition]
+  );
+
+  const onDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
+      <Box
+          width="250px"
+          bg="#f0f0f0"
+          borderRight="1px solid #ccc"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          py="10px"
+          zIndex="1000"
+        >
+          <Box
+            draggable
+            onDragStart={(event) => event.dataTransfer.setData('application/reactflow', 'NewNode')}
+            style={{
+              border: '1px dashed #ccc',
+              padding: '10px',
+              marginBottom: '10px',
+              cursor: 'grab',
+              backgroundColor: '#fff',
+            }}
+          >
+            Drag Node
+          </Box>
+        </Box>
         <NodeListSidebar nodes={nodes} onNodeClick={openModal} />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
           <ReactFlow
@@ -273,9 +313,11 @@ const LayoutFlow = () => {
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
             onConnect={onConnect}
-            onNodeContextMenu={onNodeContextMenu}
-            onEdgeContextMenu={onEdgeContextMenu}
+            onNodeContextMenu={(event, node) => onContextMenu(event, node, 'node')}
+            onEdgeContextMenu={(event, edge) => onContextMenu(event, edge, 'edge')}
             onPaneClick={onPaneClick}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
             fitView
             style={{ width: '100%', height: '100%' }}
           >
@@ -313,17 +355,6 @@ const LayoutFlow = () => {
           zIndex="10"
         >
           Save as .click
-        </Button>
-
-        <Button
-          onClick={() => setIsAddNodeModalOpen(true)}
-          position="absolute"
-          top="10px"
-          right="700px"
-          colorScheme="teal"
-          zIndex="10"
-        >
-          Add Node
         </Button>
       </Box>
 
