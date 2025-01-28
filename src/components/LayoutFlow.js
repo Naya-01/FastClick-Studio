@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback  } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toSvg } from 'html-to-image';
 import {
   ReactFlow,
@@ -11,7 +11,7 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ChakraProvider, Box, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from '@chakra-ui/react';
+import { ChakraProvider, Box, Button } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
 import NodeDetailsModal from './NodeDetailsModal';
@@ -20,6 +20,7 @@ import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
 import ContextMenu from './ContextMenu';
+import AddNodeModal from './AddNodeModal';
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -33,7 +34,6 @@ const LayoutFlow = () => {
   const [router, setRouter] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
-  const [newNode, setNewNode] = useState({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
   const reactFlowWrapper = useRef(null);
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -51,13 +51,8 @@ const LayoutFlow = () => {
           setNodes(layoutedNodes);
           setEdges(layoutedEdges);
         });
-
-        });
+      });
       return () => subscription.unsubscribe();
-
-      // const { nodes: layoutedNodes, edges: layoutedEdges } = handleData(lespairs);
-      // setNodes(layoutedNodes);
-      // setEdges(layoutedEdges);
     } catch (error) {
       console.error("Failed to connect to Click, using fallback data", error);
     }
@@ -99,7 +94,7 @@ const LayoutFlow = () => {
   };
 
   const generateClickConfig = () => {
-      const nodesConfig = nodes
+    const nodesConfig = nodes
       .map(node => {
         const element = router.getElement(node.id);
         //const element = false;
@@ -148,7 +143,7 @@ const LayoutFlow = () => {
     });
   };
 
-  const handleAddNode = () => {
+  const handleAddNode = (newNode) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
   
     const newNodeConfig = {
@@ -172,8 +167,6 @@ const LayoutFlow = () => {
     };
   
     setNodes((prevNodes) => [...prevNodes, newNodeConfig]);
-    setIsAddNodeModalOpen(false);
-    setNewNode({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
   };
 
   const onConnect = (connection) => {
@@ -290,12 +283,12 @@ const LayoutFlow = () => {
             <Controls showInteractive={false} />
             <MiniMap />
             {contextMenu && <ContextMenu 
-            {...contextMenu} 
-            nodes={nodes}
-            setNodes={setNodes} 
-            setEdges={setEdges} 
-            setContextMenu={setContextMenu}
-            updateNodeHandles={updateNodeHandles}
+              {...contextMenu} 
+              nodes={nodes}
+              setNodes={setNodes} 
+              setEdges={setEdges} 
+              setContextMenu={setContextMenu}
+              updateNodeHandles={updateNodeHandles}
             />}
           </ReactFlow>
         </Box>
@@ -334,52 +327,11 @@ const LayoutFlow = () => {
         </Button>
       </Box>
 
-            {/* Modal for Adding Node */}
-            <Modal isOpen={isAddNodeModalOpen} onClose={() => setIsAddNodeModalOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Add New Node</ModalHeader>
-          <ModalBody>
-            <Input
-              placeholder="Node Name"
-              value={newNode.id}
-              onChange={(e) => setNewNode({ ...newNode, id: e.target.value })}
-              mb={3}
-            />
-            <Input
-              placeholder="Node Class"
-              value={newNode.type}
-              onChange={(e) => setNewNode({ ...newNode, type: e.target.value })}
-              mb={3}
-            />
-            <Input
-              placeholder="Configuration"
-              value={newNode.configuration}
-              onChange={(e) => setNewNode({ ...newNode, configuration: e.target.value })}
-              mb={3}
-            />
-            <Input
-              type="number"
-              placeholder="Inputs"
-              value={newNode.inputs}
-              onChange={(e) => setNewNode({ ...newNode, inputs: Number(e.target.value) })}
-              mb={3}
-            />
-            <Input
-              type="number"
-              placeholder="Outputs"
-              value={newNode.outputs}
-              onChange={(e) => setNewNode({ ...newNode, outputs: Number(e.target.value) })}
-              mb={3}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={handleAddNode}>
-              Add Node
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AddNodeModal 
+        isOpen={isAddNodeModalOpen} 
+        onClose={() => setIsAddNodeModalOpen(false)} 
+        onAddNode={handleAddNode} 
+      />
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} />
     </ChakraProvider>
