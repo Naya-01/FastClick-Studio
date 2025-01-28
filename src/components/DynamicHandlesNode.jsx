@@ -18,7 +18,7 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
         key={`input-handle-${i}`}
         type="target"
         id={`input-handle-${i}`}
-        position={targetPosition}
+        position={(isHorizontal ? targetPosition : Position.Top)}
         style={{
           width: '15px',
           height: '8px',
@@ -55,7 +55,7 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
         key={`output-handle-${i}`}
         type="source"
         id={`output-handle-${i}`}
-        position={sourcePosition}
+        position={(isHorizontal ? sourcePosition : Position.Bottom)}
         style={{
           width: '15px',
           height: '8px',
