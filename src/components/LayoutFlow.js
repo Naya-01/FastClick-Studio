@@ -7,7 +7,6 @@ import {
   Background,
   Controls,
   MiniMap,
-  addEdge,
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -218,6 +217,7 @@ const LayoutFlow = () => {
               setEdges={setEdges} 
               setContextMenu={setContextMenu}
               updateNodeHandles={updateNodeHandles}
+              onNodeClick={openModal}
             />}
           </ReactFlow>
         </Box>

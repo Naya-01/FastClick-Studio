@@ -1,4 +1,11 @@
 import React, { useCallback } from 'react';
+import {
+  Box,
+  Text,
+  Button,
+  VStack,
+  useColorModeValue,
+} from '@chakra-ui/react';
 
 export default function ContextMenu({
   id,
@@ -12,6 +19,7 @@ export default function ContextMenu({
   setEdges,
   setContextMenu,
   updateNodeHandles,
+  onNodeClick
 }) {
   const deleteElement = useCallback(() => {
     if (type === 'node') {
@@ -30,46 +38,105 @@ export default function ContextMenu({
     updateNodeHandles(id, newInputs, node.data.outputs);
     setContextMenu(null);
   };
-  
+
   const addOutputPort = () => {
     const node = nodes.find((n) => n.id === id);
     const newOutputs = node.data.outputs + 1;
   
     updateNodeHandles(id, node.data.inputs, newOutputs);
     setContextMenu(null);
-  }
+  };
+
+  const handleDetailsClick = () => {
+    onNodeClick(id);
+    setContextMenu(null);
+  };
+
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top,
-        left,
-        right,
-        bottom,
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        zIndex: 10,
-        padding: '10px',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
-      }}
+    <Box
+      position="absolute"
+      top={top}
+      left={left}
+      right={right}
+      bottom={bottom}
+      bg={bg}
+      borderWidth="1px"
+      borderColor={borderColor}
+      borderRadius="md"
+      boxShadow="lg"
+      p={3}
+      zIndex={10}
+      minWidth="200px"
     >
-      <p style={{ marginBottom: '8px', fontSize: '12px', color: '#333' }}>
+      <Text fontSize="sm" color="gray.600" mb={2} fontWeight="medium">
         {type === 'node' ? `Node: ${id}` : `Edge: ${id}`}
-      </p>
-      {type === 'node' && (
-        <>
-          <button onClick={addInputPort} style={{ display: 'block', margin: '5px 0' }}>
-            Add Input Port
-          </button>
-          <button onClick={addOutputPort} style={{ display: 'block', margin: '5px 0' }}>
-            Add Output Port
-          </button>
-        </>
-      )}
-      <button onClick={deleteElement} style={{ display: 'block', margin: '5px 0' }}>
-        Delete
-      </button>
-    </div>
+      </Text>
+      
+      <VStack spacing={2} align="stretch">
+        {type === 'node' && (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDetailsClick}
+              _hover={{ 
+                bg: 'purple.50', 
+                color: 'purple.600',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+              justifyContent="flex-start"
+            >
+              View Details
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={addInputPort}
+              _hover={{ 
+                bg: 'blue.50', 
+                color: 'blue.600',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+              justifyContent="flex-start"
+            >
+              Add Input Port
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={addOutputPort}
+              _hover={{ 
+                bg: 'blue.50', 
+                color: 'blue.600',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+              justifyContent="flex-start"
+            >
+              Add Output Port
+            </Button>
+          </>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={deleteElement}
+          _hover={{ 
+            bg: 'red.50', 
+            color: 'red.600',
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out'
+          }}
+          justifyContent="flex-start"
+        >
+          Delete
+        </Button>
+      </VStack>
+    </Box>
   );
 }
