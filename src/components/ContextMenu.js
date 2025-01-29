@@ -55,6 +55,13 @@ export default function ContextMenu({
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
+  const buttonHoverStyles = (bgColor, textColor) => ({
+    bg: bgColor,
+    color: textColor,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease-in-out'
+  });
+
   return (
     <Box
       position="absolute"
@@ -70,6 +77,8 @@ export default function ContextMenu({
       p={3}
       zIndex={10}
       minWidth="200px"
+      role="menu"
+      aria-label="Context menu"
     >
       <Text fontSize="sm" color="gray.600" mb={2} fontWeight="medium">
         {type === 'node' ? `Node: ${id}` : `Edge: ${id}`}
@@ -82,12 +91,7 @@ export default function ContextMenu({
               size="sm"
               variant="ghost"
               onClick={handleDetailsClick}
-              _hover={{ 
-                bg: 'purple.50', 
-                color: 'purple.600',
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out'
-              }}
+              _hover={buttonHoverStyles('purple.50', 'purple.600')}
               justifyContent="flex-start"
             >
               View Details
@@ -96,12 +100,7 @@ export default function ContextMenu({
               size="sm"
               variant="ghost"
               onClick={addInputPort}
-              _hover={{ 
-                bg: 'blue.50', 
-                color: 'blue.600',
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out'
-              }}
+              _hover={buttonHoverStyles('blue.50', 'blue.600')}
               justifyContent="flex-start"
             >
               Add Input Port
@@ -110,12 +109,7 @@ export default function ContextMenu({
               size="sm"
               variant="ghost"
               onClick={addOutputPort}
-              _hover={{ 
-                bg: 'blue.50', 
-                color: 'blue.600',
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out'
-              }}
+              _hover={buttonHoverStyles('blue.50', 'blue.600')}
               justifyContent="flex-start"
             >
               Add Output Port
@@ -126,12 +120,7 @@ export default function ContextMenu({
           size="sm"
           variant="ghost"
           onClick={deleteElement}
-          _hover={{ 
-            bg: 'red.50', 
-            color: 'red.600',
-            transform: 'translateY(-2px)',
-            transition: 'all 0.2s ease-in-out'
-          }}
+          _hover={buttonHoverStyles('red.50', 'red.600')}
           justifyContent="flex-start"
         >
           Delete
