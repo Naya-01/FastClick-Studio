@@ -16,7 +16,7 @@ export const getLayoutedElements = (nodes, edges, direction = 'DOWN') => {
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.mergeEdges': 'false',
-  
+      'org.eclipse.elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
     children: nodes.map((node) => ({
       id: node.id,
