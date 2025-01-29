@@ -15,6 +15,7 @@
     "axios": "^1.7.7",
     "elkjs": "^0.9.3",
     "html-to-image": "^1.11.11",
+    "http-proxy-middleware": "^3.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
@@ -29,7 +30,6 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://localhost:8080",
   "eslintConfig": {
     "extends": [
       "react-app",
