@@ -139,8 +139,8 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
             <>
               <Text fontWeight="bold" mb={3}>Node: {selectedNode.data.label}</Text>
 
-              <Box display="flex">
-                <Box width="40%" maxHeight="700px" overflowY="auto" mr={5}>
+              <Box display="flex" height="80vh">
+                <Box width="40%" maxHeight="100%" overflowY="auto" mr={5} flexShrink={0}>
                   <Box position="sticky" top="0" bg="white" zIndex="1">
                     <Input
                       placeholder="Search handlers..."
@@ -171,7 +171,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   </Table>
                 </Box>
 
-                <Box flex="1" p={3} border="1px solid" borderColor={borderColor} bg="gray.50" rounded="md">
+                <Box flex="1" p={3} border="1px solid" borderColor={borderColor} bg="gray.50" rounded="md" overflowY="auto">
                   <Text fontSize="lg" fontWeight="bold" mb={2}>
                     {selectedHandler || "Select a handler"}
                   </Text>
