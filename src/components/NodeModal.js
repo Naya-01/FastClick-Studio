@@ -9,7 +9,11 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
   }, [initialNodeData]);
 
   const handleConfirm = () => {
-    onConfirm(nodeData);
+    if(isEdit){
+        onConfirm(nodeData, initialNodeData.id);
+    }else{
+        onConfirm(nodeData);
+    }
     setNodeData({ id: '', type: '', configuration: '', inputs: 1, outputs: 1 });
     onClose();
   };
@@ -25,7 +29,6 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
             value={nodeData.id}
             onChange={(e) => setNodeData({ ...nodeData, id: e.target.value })}
             mb={3}
-            isDisabled={isEdit}
           />
           <Input
             placeholder="Node Class"

@@ -189,10 +189,10 @@ const LayoutFlow = () => {
     event.dataTransfer.dropEffect = 'move';
   };
 
-  const handleEditNode = (updatedNode) => {
+  const handleEditNode = (updatedNode, oldId) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
-        if (node.id !== updatedNode.id) return node;
+        if (node.id !== oldId) return node;
 
         const cleanedNode = {
           ...updatedNode,
@@ -207,6 +207,7 @@ const LayoutFlow = () => {
   
         return {
           ...node,
+          id: cleanedNode.id,
           data: {
             ...node.data,
             label: cleanedNode.id,
@@ -220,6 +221,19 @@ const LayoutFlow = () => {
             width: `${newWidth}px`,
           },
         };
+      })
+    );
+
+
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => {
+        if (edge.source === oldId) {
+          return { ...edge, source: updatedNode.id };
+        }
+        if (edge.target === oldId) {
+          return { ...edge, target: updatedNode.id };
+        }
+        return edge;
       })
     );
   
