@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Box, List, ListItem, Button, Tooltip, Input } from '@chakra-ui/react';
 
-const NodeListSidebar = ({ nodes, onNodeClick }) => {
+const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredNodes = nodes.filter((node) =>
     node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const isLocalNode = (node) => !router?.getElement(node.id);
 
   return (
     <Box
@@ -27,21 +28,31 @@ const NodeListSidebar = ({ nodes, onNodeClick }) => {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
       <List spacing={3}>
-        {filteredNodes.map((node) => (
+        {filteredNodes.map((node) => {
+        const local = isLocalNode(node);
+
+        return (
           <Tooltip label={node.data.label} key={node.id}>
             <ListItem
-              cursor="pointer"
-              onClick={() => onNodeClick(node.id)}
+              cursor={local ? "not-allowed" : "pointer"}
+              onClick={() => !local && onNodeClick(node.id)}
               whiteSpace="nowrap"
               overflow="hidden"
               textOverflow="ellipsis"
             >
-              <Button width="100%" justifyContent="flex-start">
+              <Button 
+                width="100%" 
+                justifyContent="flex-start"
+                backgroundColor={local ? "green.100" : "white"}
+                _hover={local ? {} : { backgroundColor: "gray.200" }} 
+                isDisabled={local}
+              >
                 {node.data.label}
               </Button>
             </ListItem>
           </Tooltip>
-        ))}
+        );
+      })}
       </List>
     </Box>
   );

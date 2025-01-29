@@ -19,7 +19,7 @@ import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
 import ContextMenu from './ContextMenu';
-import AddNodeModal from './AddNodeModal';
+import NodeModal from './NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
@@ -40,6 +40,9 @@ const LayoutFlow = () => {
   const reactFlowWrapper = useRef(null);
   const updateNodeInternals = useUpdateNodeInternals();
   const [newNodePosition, setNewNodePosition] = useState({ x: 0, y: 0 });
+  const [isEditNodeModalOpen, setIsEditNodeModalOpen] = useState(false);
+  const [editNodeData, setEditNodeData] = useState(null);
+
 
   const webSocketService = new WebsocketService();
 
@@ -186,11 +189,65 @@ const LayoutFlow = () => {
     event.dataTransfer.dropEffect = 'move';
   };
 
+  const handleEditNode = (updatedNode) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (node.id !== updatedNode.id) return node;
+
+        const cleanedNode = {
+          ...updatedNode,
+          id: updatedNode.id.trim(),
+          type: updatedNode.type.trim(),
+          configuration: updatedNode.configuration.trim(),
+          inputs: Math.max(0, updatedNode.inputs),
+          outputs: Math.max(0, updatedNode.outputs),
+        };
+  
+        const newWidth = calculateNodeWidth(cleanedNode.id, cleanedNode.inputs, cleanedNode.outputs);
+  
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            label: cleanedNode.id,
+            type: cleanedNode.type,
+            configuration: cleanedNode.configuration,
+            inputs: cleanedNode.inputs,
+            outputs: cleanedNode.outputs,
+          },
+          style: {
+            ...node.style,
+            width: `${newWidth}px`,
+          },
+        };
+      })
+    );
+  
+    setIsEditNodeModalOpen(false);
+    setEditNodeData(null);
+  };
+  
+  
+  const openEditModal = (nodeId) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    setEditNodeData({
+      id: node.id,
+      type: node.data.type,
+      configuration: node.data.configuration,
+      inputs: node.data.inputs,
+      outputs: node.data.outputs,
+    });
+    setIsEditNodeModalOpen(true);
+  };
+  
+  
+  
+
   return (
     <ChakraProvider>
       <Box display="flex" width="100%" height="100vh" position="relative">
         <DragPanel />
-        <NodeListSidebar nodes={nodes} onNodeClick={openModal} />
+        <NodeListSidebar nodes={nodes} onNodeClick={openModal} router={router} />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
@@ -218,6 +275,8 @@ const LayoutFlow = () => {
               setContextMenu={setContextMenu}
               updateNodeHandles={updateNodeHandles}
               onNodeClick={openModal}
+              onEditNode={openEditModal}
+              router={router}
             />}
           </ReactFlow>
         </Box>
@@ -228,13 +287,22 @@ const LayoutFlow = () => {
         />
       </Box>
 
-      <AddNodeModal 
+      <NodeModal 
         isOpen={isAddNodeModalOpen} 
         onClose={() => setIsAddNodeModalOpen(false)} 
-        onAddNode={handleAddNode} 
+        onConfirm={handleAddNode} 
+        initialNodeData={null} 
       />
 
-      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} />
+      <NodeModal 
+        isOpen={isEditNodeModalOpen} 
+        onClose={() => setIsEditNodeModalOpen(false)} 
+        onConfirm={handleEditNode} 
+        initialNodeData={editNodeData} 
+        isEdit={true} 
+      />
+
+      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
     </ChakraProvider>
   );
 };
