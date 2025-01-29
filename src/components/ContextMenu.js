@@ -19,7 +19,9 @@ export default function ContextMenu({
   setEdges,
   setContextMenu,
   updateNodeHandles,
-  onNodeClick
+  onNodeClick,
+  onEditNode,
+  router,
 }) {
   const deleteElement = useCallback(() => {
     if (type === 'node') {
@@ -96,6 +98,18 @@ export default function ContextMenu({
             >
               View Details
             </Button>
+            { !router?.getElement(id) && (<Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                onEditNode(id);
+                setContextMenu(null);
+              }}
+              _hover={buttonHoverStyles('yellow.50', 'yellow.600')}
+              justifyContent="flex-start"
+            >
+              Edit Node
+            </Button>)}
             <Button
               size="sm"
               variant="ghost"
