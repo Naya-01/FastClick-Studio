@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toSvg } from 'html-to-image';
+import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
   useNodesState,
@@ -10,7 +11,9 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ChakraProvider, Box, Button } from '@chakra-ui/react';
+import { 
+  Box,
+} from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
 import NodeDetailsModal from './NodeDetailsModal';
@@ -24,6 +27,7 @@ import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
 import { DragPanel } from './DragPanel';
+import { useAlert } from '../context/AlertContext';
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -42,6 +46,9 @@ const LayoutFlow = () => {
   const [newNodePosition, setNewNodePosition] = useState({ x: 0, y: 0 });
   const [isEditNodeModalOpen, setIsEditNodeModalOpen] = useState(false);
   const [editNodeData, setEditNodeData] = useState(null);
+  const [connectionError, setConnectionError] = useState(false);
+  const navigate = useNavigate();
+  const { showAlert } = useAlert();
 
 
   const webSocketService = new WebsocketService();
@@ -57,26 +64,39 @@ const LayoutFlow = () => {
 
 
   const fetchData = () => {
-    try {
-      const subscription = webSocketService.getFlatConfig().subscribe((configData) => {
-        const routerTreeModel = new RouterTreeModel(configData);
-        setRouter(routerTreeModel);
-        const pairs = routerTreeModel.getAllPairs();
-
-        handleData(pairs).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
-          setNodes(layoutedNodes);
-          setEdges(layoutedEdges);
-        });
+      const subscription = webSocketService.getFlatConfig().subscribe({
+        next: (configData) => {
+          const routerTreeModel = new RouterTreeModel(configData);
+          setRouter(routerTreeModel);
+          const pairs = routerTreeModel.getAllPairs();
+  
+          handleData(pairs).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
+          });
+        },
+        error: (error) => {
+          setConnectionError(true);
+        },
       });
       return () => subscription.unsubscribe();
-    } catch (error) {
-      console.error("Failed to connect to Click, using fallback data", error);
-    }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (connectionError) {
+      showAlert(
+        'Connection Error',
+        'The connection to the server has been lost. Please check your network.',
+        'error'
+      );
+      navigate('/');
+      setConnectionError(false);
+    }
+  }, [connectionError, navigate, showAlert]);
 
   const openModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
@@ -258,7 +278,7 @@ const LayoutFlow = () => {
   
 
   return (
-    <ChakraProvider>
+    <>
       <Box display="flex" width="100%" height="100vh" position="relative">
         <DragPanel />
         <NodeListSidebar nodes={nodes} onNodeClick={openModal} router={router} />
@@ -317,7 +337,7 @@ const LayoutFlow = () => {
       />
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
-    </ChakraProvider>
+    </>
   );
 };
 
