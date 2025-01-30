@@ -1,6 +1,14 @@
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
+const COLORS = [
+  '#004085',
+  '#cc0000',
+  '#009900',
+  '#990099',
+  '#ff6600',
+  '#007a7a',
+];
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
@@ -15,14 +23,20 @@ export const handleData = (pairs) => {
   const outputHandleCounter = {};
   const inputHandleCounter = {};
 
-  pairs.forEach((pair) => {
+  const sortedPairs = [...pairs].sort((a, b) => {
+    const aPort = a.sourcePort ?? 0;
+    const bPort = b.sourcePort ?? 0;
+    return aPort - bPort;
+  });
+
+  sortedPairs.forEach((pair) => {
     if (!nodeMap.has(pair.source)) {
       nodeMap.set(pair.source, { id: pair.source, inputs: 0, outputs: 0 });
     }
 
     if (pair.destination !== null) {
       nodeMap.get(pair.source).outputs += 1;
-      
+
       if (!nodeMap.has(pair.destination)) {
         nodeMap.set(pair.destination, { id: pair.destination, inputs: 0, outputs: 0 });
       }
@@ -31,9 +45,9 @@ export const handleData = (pairs) => {
     }
   });
 
-  const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => {  
-    const nodeWidth = calculateNodeWidth(nodeData.id,nodeData.inputs, nodeData.outputs);
-  
+  const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => {
+    const nodeWidth = calculateNodeWidth(nodeData.id, nodeData.inputs, nodeData.outputs);
+
     return {
       id: nodeData.id,
       data: {
@@ -66,24 +80,36 @@ export const handleData = (pairs) => {
     return inputHandleCounter[nodeId]++;
   };
 
-  const parsedEdges = pairs
-  .filter((pair) => pair.destination !== null)
-  .map((pair, index) => ({
-    id: `e${pair.source}-${pair.destination}-${index}`,
-    source: pair.source,
-    target: pair.destination,
-    sourceHandle: `output-handle-${getOutputHandleIndex(pair.source)}`,
-    targetHandle: `input-handle-${getInputHandleIndex(pair.destination)}`,
-    type: ConnectionLineType.SmoothStep,
-    animated: true,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: '#004085',
-    },
-    style: { stroke: '#004085', strokeWidth: 2 },
-    zIndex: 2000,
-  }));
-  
+  const parsedEdges = sortedPairs
+    .filter((pair) => pair.destination !== null)
+    .map((pair, index) => {
+      const outputHandleIndex = getOutputHandleIndex(pair.source);
+      const inputHandleIndex = getInputHandleIndex(pair.destination);
+
+      const colorIndex = Math.max(outputHandleIndex, inputHandleIndex) % COLORS.length;
+      const edgeColor = COLORS[colorIndex];
+
+      return {
+        id: `e${pair.source}-${pair.destination}-${index}`,
+        source: pair.source,
+        target: pair.destination,
+        sourceHandle: `output-handle-${outputHandleIndex}`,
+        targetHandle: `input-handle-${inputHandleIndex}`,
+        type: ConnectionLineType.SmoothStep,
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: edgeColor,
+        },
+        style: { 
+          stroke: edgeColor,
+          strokeWidth: 2,
+        },
+        zIndex: 2000,
+      };
+    });
+
+
   let resp = getLayoutedElements(parsedNodes, parsedEdges).then((layout) => {
     return layout;
   });

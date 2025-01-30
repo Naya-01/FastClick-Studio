@@ -83,6 +83,8 @@ export class RouterTreeModel {
         if (portMatch) {
           startElement = portMatch[1].trim();
           port = parseInt(portMatch[2], 10);
+        } else {
+          port = 0;
         }
         sequences.push({ sequence: sequenceJoined, startElement, port });
       }
@@ -97,6 +99,7 @@ export class RouterTreeModel {
       sequencesByStartElement[seq.startElement].push(seq);
     });
   
+    const usedPorts: { [key: string]: Set<number> } = {};
     for (const startElement in sequencesByStartElement) {
       const seqs = sequencesByStartElement[startElement];
       seqs.sort((a, b) => {
@@ -120,15 +123,31 @@ export class RouterTreeModel {
           let nextElementToken = elements[i + 1];
   
           let currentElementName = currentElementToken;
+          let currentPort: number | null = null;
           let match = currentElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
           if (match) {
             currentElementName = match[1].trim();
+            currentPort = parseInt(match[2], 10);
+          } else {
+            if (!usedPorts[currentElementName]) {
+              usedPorts[currentElementName] = new Set();
+            }
+            let smallestPort = 0;
+            while (usedPorts[currentElementName].has(smallestPort)) {
+              smallestPort++;
+            }
+            currentPort = smallestPort;
+            usedPorts[currentElementName].add(currentPort);
           }
   
           let nextElementName = nextElementToken;
+          let nextPort: number | null = null;
           match = nextElementToken.match(/^([^\[\]]+)\s*\[\s*(\d+)\s*\]$/);
           if (match) {
             nextElementName = match[1].trim();
+            nextPort = parseInt(match[2], 10);
+          } else {
+            nextPort = 0;
           }
   
           allElements.add(currentElementName);
@@ -144,10 +163,13 @@ export class RouterTreeModel {
   
           const pairExists = pairs.some(pair => 
             pair.source === currentElementName &&
-            pair.destination === nextElementName
+            pair.destination === nextElementName &&
+            pair.sourcePort === currentPort &&
+            pair.destinationPort === nextPort
           );
+  
           if (!pairExists) {
-            pairs.push(new Pair(currentElementName, nextElementName));
+            pairs.push(new Pair(currentElementName, nextElementName, currentPort, nextPort));
           }
         }
       });
