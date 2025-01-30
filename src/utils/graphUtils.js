@@ -1,6 +1,14 @@
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
+const COLORS = [
+  '#004085',
+  '#cc0000',
+  '#009900',
+  '#990099',
+  '#ff6600',
+  '#007a7a',
+];
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
@@ -74,21 +82,33 @@ export const handleData = (pairs) => {
 
   const parsedEdges = sortedPairs
     .filter((pair) => pair.destination !== null)
-    .map((pair, index) => ({
-      id: `e${pair.source}-${pair.destination}-${index}`,
-      source: pair.source,
-      target: pair.destination,
-      sourceHandle: `output-handle-${getOutputHandleIndex(pair.source)}`,
-      targetHandle: `input-handle-${getInputHandleIndex(pair.destination)}`,
-      type: ConnectionLineType.SmoothStep,
-      animated: true,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#004085',
-      },
-      style: { stroke: '#004085', strokeWidth: 2 },
-      zIndex: 2000,
-    }));
+    .map((pair, index) => {
+      const outputHandleIndex = getOutputHandleIndex(pair.source);
+      const inputHandleIndex = getInputHandleIndex(pair.destination);
+
+      const colorIndex = Math.max(outputHandleIndex, inputHandleIndex) % COLORS.length;
+      const edgeColor = COLORS[colorIndex];
+
+      return {
+        id: `e${pair.source}-${pair.destination}-${index}`,
+        source: pair.source,
+        target: pair.destination,
+        sourceHandle: `output-handle-${outputHandleIndex}`,
+        targetHandle: `input-handle-${inputHandleIndex}`,
+        type: ConnectionLineType.SmoothStep,
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: edgeColor,
+        },
+        style: { 
+          stroke: edgeColor,
+          strokeWidth: 2,
+        },
+        zIndex: 2000,
+      };
+    });
+
 
   let resp = getLayoutedElements(parsedNodes, parsedEdges).then((layout) => {
     return layout;

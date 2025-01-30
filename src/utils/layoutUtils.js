@@ -9,14 +9,16 @@ export const getLayoutedElements = (nodes, edges, direction = 'DOWN') => {
   const elkGraph = {
     id: 'root',
     layoutOptions: {
-      'elk.algorithm': 'mrtree',
+      'elk.algorithm': 'layered',
       'elk.direction': direction,
       'elk.layered.spacing.nodeNodeBetweenLayers': '100',
       'elk.spacing.nodeNode': '150',
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.edgeRouting': 'POLYLINE',
       'elk.layered.mergeEdges': 'false',
-      'org.eclipse.elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      'elk.edgeLabels.inline': 'true',
+      'org.eclipse.elk.layered.nodePlacement.favorStraightEdges': 'false',
+      'elk.edgeRouting.priority': 'HIGH',
+      'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
     },
     children: nodes.map((node) => ({
       id: node.id,
