@@ -9,7 +9,7 @@ export const getLayoutedElements = (nodes, edges, direction = 'DOWN') => {
   const elkGraph = {
     id: 'root',
     layoutOptions: {
-      'elk.algorithm': 'layered',
+      'elk.algorithm': 'mrtree',
       'elk.direction': direction,
       'elk.layered.spacing.nodeNodeBetweenLayers': '100',
       'elk.spacing.nodeNode': '150',
