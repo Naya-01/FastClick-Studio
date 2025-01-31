@@ -1,14 +1,6 @@
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
-
-const COLORS = [
-  '#004085',
-  '#cc0000',
-  '#009900',
-  '#990099',
-  '#ff6600',
-  '#007a7a',
-];
+import { getColor } from '../utils/colors';
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
@@ -89,8 +81,7 @@ export const handleData = (pairs, router) => {
       const outputHandleIndex = getOutputHandleIndex(pair.source);
       const inputHandleIndex = getInputHandleIndex(pair.destination);
 
-      const colorIndex = Math.max(outputHandleIndex, inputHandleIndex) % COLORS.length;
-      const edgeColor = COLORS[colorIndex];
+      const edgeColor = getColor(outputHandleIndex, inputHandleIndex);
 
       return {
         id: `e${pair.source}-${pair.destination}-${index}`,
