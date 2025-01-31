@@ -156,21 +156,34 @@ const LayoutFlow = () => {
   
     setNodes((prevNodes) => [...prevNodes, newNodeConfig]);
   };
+
+  const getAdjustedCoordinates = (event, wrapperRef) => {
+    const wrapperBounds = wrapperRef.current.getBoundingClientRect();
+    const transform = wrapperRef.current.querySelector('.react-flow__viewport').style.transform;
   
+    const match = transform.match(/matrix\(([^,]+),[^,]+,[^,]+,[^,]+,([^,]+),([^,]+)\)/);
+    const scale = match ? parseFloat(match[1]) : 1;
+    const offsetX = match ? parseFloat(match[2]) : 0;
+    const offsetY = match ? parseFloat(match[3]) : 0;
+  
+    const adjustedX = (event.clientX - wrapperBounds.left - offsetX) / scale;
+    const adjustedY = (event.clientY - wrapperBounds.top - offsetY) / scale;
+  
+    return { x: adjustedX, y: adjustedY };
+  };
+  
+
   const onContextMenu = useCallback(
     (event, element, type) => {
       event.preventDefault();
   
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      const { x, y } = getAdjustedCoordinates(event, reactFlowWrapper);
   
       setContextMenu({
         id: element.id,
         type,
-        top: position.y,
-        left: position.x,
+        top: y,
+        left: x,
       });
     },
     [setContextMenu]
@@ -269,6 +282,9 @@ const LayoutFlow = () => {
     setIsEditNodeModalOpen(true);
   };
   
+  
+  
+
   return (
     <>
       <Box display="flex" width="100%" height="100vh" position="relative">
