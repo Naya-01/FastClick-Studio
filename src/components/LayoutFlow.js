@@ -318,6 +318,7 @@ const LayoutFlow = () => {
               updateNodeHandles={updateNodeHandles}
               onNodeClick={openModal}
               onEditNode={openEditModal}
+              router={router}
             />}
           </ReactFlow>
         </Box>
