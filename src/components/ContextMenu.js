@@ -20,8 +20,7 @@ export default function ContextMenu({
   setContextMenu,
   updateNodeHandles,
   onNodeClick,
-  onEditNode,
-  router,
+  onEditNode
 }) {
   const deleteElement = useCallback(() => {
     if (type === 'node') {
@@ -98,7 +97,7 @@ export default function ContextMenu({
             >
               View Details
             </Button>
-            { !router?.getElement(id) && (<Button
+            <Button
               size="sm"
               variant="ghost"
               onClick={() => {
@@ -109,7 +108,7 @@ export default function ContextMenu({
               justifyContent="flex-start"
             >
               Edit Node
-            </Button>)}
+            </Button>
             <Button
               size="sm"
               variant="ghost"

@@ -18,7 +18,7 @@ export const calculateNodeWidth = (label, inputs, outputs) => {
   return Math.max(baseWidth, textWidth, baseWidth + portWidth);
 };
 
-export const handleData = (pairs) => {
+export const handleData = (pairs, router) => {
   const nodeMap = new Map();
   const outputHandleCounter = {};
   const inputHandleCounter = {};
@@ -48,12 +48,15 @@ export const handleData = (pairs) => {
   const parsedNodes = Array.from(nodeMap.values()).map((nodeData) => {
     const nodeWidth = calculateNodeWidth(nodeData.id, nodeData.inputs, nodeData.outputs);
 
+    const element = router.getElement(nodeData.id);
     return {
       id: nodeData.id,
       data: {
         label: nodeData.id,
         inputs: nodeData.inputs,
         outputs: nodeData.outputs,
+        type: element.type,
+        configuration: element.configuration,
       },
       position: { x: 0, y: 0 },
       type: 'dynamicHandlesNode',

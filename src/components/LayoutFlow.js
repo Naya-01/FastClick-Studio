@@ -70,7 +70,7 @@ const LayoutFlow = () => {
           setRouter(routerTreeModel);
           const pairs = routerTreeModel.getAllPairs();
   
-          handleData(pairs).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+          handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
             setNodes(layoutedNodes);
             setEdges(layoutedEdges);
           });
@@ -224,6 +224,7 @@ const LayoutFlow = () => {
         };
   
         const newWidth = calculateNodeWidth(cleanedNode.id, cleanedNode.inputs, cleanedNode.outputs);
+        const isNodeInRouter = router.getElement(cleanedNode.id) !== undefined;
   
         return {
           ...node,
@@ -238,6 +239,8 @@ const LayoutFlow = () => {
           },
           style: {
             ...node.style,
+            border: isNodeInRouter ? '1px solid #004085' : '1px solid #28a745',
+            backgroundColor: isNodeInRouter ? '#cce5ff' : '#d4edda',
             width: `${newWidth}px`,
           },
         };
@@ -310,7 +313,6 @@ const LayoutFlow = () => {
               updateNodeHandles={updateNodeHandles}
               onNodeClick={openModal}
               onEditNode={openEditModal}
-              router={router}
             />}
           </ReactFlow>
         </Box>

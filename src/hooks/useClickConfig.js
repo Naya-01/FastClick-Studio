@@ -7,13 +7,7 @@ export const useClickConfig = (nodes, edges, router) => {
   const generateClickConfig = useCallback(() => {
     const nodesConfig = nodes
       .map(node => {
-        const element = router.getElement(node.id);
-        //const element = false;
-        if (element) {
-          return `${node.id} :: ${element.type}(${element.configuration || ''});`;
-        } else {
-          return `${node.id} :: ${node.data.type || 'Node'}(${node.data.configuration || ''});`;
-        }
+        return `${node.id} :: ${node.data.type}(${node.data.configuration || ''});`;
       })
       .join('\n');
 
