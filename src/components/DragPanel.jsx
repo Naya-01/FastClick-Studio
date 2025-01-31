@@ -2,6 +2,12 @@ import React from 'react';
 import { Box } from '@chakra-ui/react';
 
 export const DragPanel = () => {
+
+  const onDragStart = (event, nodeType) => {
+    event.dataTransfer.setData('application/reactflow', nodeType);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <Box
       width="250px"
@@ -15,7 +21,7 @@ export const DragPanel = () => {
     >
       <Box
         draggable
-        onDragStart={(event) => event.dataTransfer.setData('application/reactflow', 'NewNode')}
+        onDragStart={(event) => onDragStart(event, 'default')}
         style={{
           border: '1px dashed #ccc',
           padding: '10px',
