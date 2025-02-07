@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, List, ListItem, Button, Tooltip, Input } from '@chakra-ui/react';
+import { getAddColor, getLiveColor } from '../utils/colors';
 
 const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,8 +44,8 @@ const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
               <Button 
                 width="100%" 
                 justifyContent="flex-start"
-                backgroundColor={local ? "green.100" : "white"}
-                _hover={local ? {} : { backgroundColor: "gray.200" }} 
+                backgroundColor={local ? `${getAddColor()}` : "white"}
+                _hover={local ? {} : { backgroundColor: `${getLiveColor()}` }} 
                 isDisabled={local}
               >
                 {node.data.label}
