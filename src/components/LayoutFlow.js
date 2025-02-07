@@ -29,6 +29,7 @@ import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
 import { DragPanel } from './DragPanel';
 import { useAlert } from '../context/AlertContext';
+import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -146,10 +147,10 @@ const LayoutFlow = () => {
       position: newNodePosition,
       type: 'dynamicHandlesNode',
       style: {
-        border: '1px solid #28a745',
+        border: `1px solid ${getAddBorderColor()}`,
         padding: 10,
         borderRadius: 5,
-        backgroundColor: '#d4edda',
+        backgroundColor: `${getAddColor()}`,
         width: `${newNodeWidth}px`, 
       },
     };
@@ -244,8 +245,8 @@ const LayoutFlow = () => {
           },
           style: {
             ...node.style,
-            border: isNodeInRouter ? '1px solid #004085' : '1px solid #28a745',
-            backgroundColor: isNodeInRouter ? '#cce5ff' : '#d4edda',
+            border: isNodeInRouter ? `1px solid ${getLiveBorderColor()}` : `1px solid ${getAddBorderColor()}`,
+            backgroundColor: isNodeInRouter ? `${getLiveColor()}` : `${getAddColor()}`,
             width: `${newWidth}px`,
           },
         };

@@ -1,6 +1,6 @@
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
-import { getColor } from '../utils/colors';
+import { getColor, getLiveBorderColor, getLiveColor } from '../utils/colors';
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
@@ -53,10 +53,10 @@ export const handleData = (pairs, router) => {
       position: { x: 0, y: 0 },
       type: 'dynamicHandlesNode',
       style: {
-        border: '1px solid #004085',
+        border: `1px solid ${getLiveBorderColor()}`,
         padding: 10,
         borderRadius: 5,
-        backgroundColor: '#cce5ff',
+        backgroundColor: `${getLiveColor()}`,
         width: `${nodeWidth}px`,
       },
     };
