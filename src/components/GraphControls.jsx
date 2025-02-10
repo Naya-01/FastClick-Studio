@@ -23,7 +23,7 @@ export const GraphControls = ({ onDownloadImage, onGenerateConfig }) => {
         colorScheme="green"
         zIndex="10"
       >
-        Save as .click
+        Save click configuration
       </Button>
     </>
   );

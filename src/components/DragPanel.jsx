@@ -3,12 +3,12 @@ import { Box, Text, Input, List, ListItem, Button, Tooltip } from '@chakra-ui/re
 import { parseXMLFile } from '../services/elementService';
 import { getLiveColor } from '../utils/colors';
 
-const ITEMS_PER_PAGE = 10 ;
+const ITEMS_PER_PAGE = 10;
 
 export const DragPanel = () => {
   const [elements, setElements] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -17,7 +17,7 @@ export const DragPanel = () => {
       reader.onload = (e) => {
         const parsedElements = parseXMLFile(e.target.result);
         setElements(parsedElements);
-        setVisibleCount(ITEMS_PER_PAGE);
+        setCurrentPage(0);
       };
       reader.readAsText(file);
     }
@@ -28,9 +28,17 @@ export const DragPanel = () => {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const filteredElements = elements
-    .filter((element) => element.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .slice(0, visibleCount);
+  const filteredElements = elements.filter((element) =>
+    element.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const maxPages = Math.ceil(filteredElements.length / ITEMS_PER_PAGE);
+  if (currentPage >= maxPages && maxPages > 0) {
+    setCurrentPage(0);
+  }
+
+  const startIdx = currentPage * ITEMS_PER_PAGE;
+  const visibleElements = filteredElements.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
   return (
     <Box
@@ -50,7 +58,10 @@ export const DragPanel = () => {
         placeholder="Search elements..."
         mb={3}
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setCurrentPage(0);
+        }}
       />
       <Box
         draggable
@@ -67,7 +78,7 @@ export const DragPanel = () => {
       </Box>
 
       <List spacing={3}>
-        {filteredElements.map((element) => (
+        {visibleElements.map((element) => (
           <Tooltip label={element.name} key={element.name}>
             <ListItem
               draggable
@@ -87,15 +98,25 @@ export const DragPanel = () => {
         ))}
       </List>
 
-      {visibleCount < elements.length && (
-        <Button 
-          mt={4} 
-          width="100%" 
-          onClick={() => setVisibleCount(visibleCount + ITEMS_PER_PAGE)}
-        >
-          Charger plus...
-        </Button>
-      )}
+      <Box mt={4} textAlign="center">
+        {currentPage > 0 && (
+          <Button 
+            width="100%" 
+            onClick={() => setCurrentPage((prev) => prev - 1)}
+            mb={2}
+          >
+            Previous
+          </Button>
+        )}
+        {startIdx + ITEMS_PER_PAGE < filteredElements.length && (
+          <Button 
+            width="100%" 
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+          >
+            Next
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 };
