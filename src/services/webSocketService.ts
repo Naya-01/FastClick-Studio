@@ -80,9 +80,7 @@ export class WebsocketService {
 
   postHandler(element: string , handler: string, data: any) {
     return new Observable(observer => {
-      axios.post(`/fastclick/${element}/${handler}`, {data}, {
-        headers: { 'Content-Type': 'text/plain' }
-      })
+      axios.post(`/fastclick/${element}/${handler}`, data)
         .then(response => {
           observer.next(response.data);
           observer.complete();
@@ -93,11 +91,7 @@ export class WebsocketService {
 
   updateClickConfig(newConfig: string): Observable<string> {
     return new Observable(observer => {
-      axios.post('/fastclick/hotconfig', newConfig, {
-        headers: {
-          'Content-Type': 'text/plain'
-        }
-      })
+      axios.post('/fastclick/hotconfig', newConfig)
         .then(response => {
           observer.next(response.data);
           observer.complete();
