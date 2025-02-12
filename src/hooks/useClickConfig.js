@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { WebsocketService } from '../services/webSocketService';
 
-export const useClickConfig = (nodes, edges, router) => {
+export const useClickConfig = (nodes, edges, router, setConnectionError) => {
   const webSocketService = new WebsocketService();
 
   const generateClickConfig = useCallback(() => {
@@ -35,7 +35,10 @@ export const useClickConfig = (nodes, edges, router) => {
 
     webSocketService.updateClickConfig(config).subscribe({
       next: (resp) => console.log("Configuration updated successfully:", resp),
-      error: (err) => console.error("Failed to update configuration:", err),
+      error: (err) => {
+        console.error("Failed to update configuration:", err);
+        setConnectionError(true);
+      },
       complete: () => console.log("Configuration update complete.")
     });
   }, [nodes, edges, router, webSocketService]);

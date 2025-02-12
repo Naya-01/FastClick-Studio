@@ -63,7 +63,7 @@ const LayoutFlow = () => {
     updateNodeInternals
   );
 
-  const { generateClickConfig } = useClickConfig(nodes, edges, router);
+  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError);
 
 
   const fetchData = () => {
