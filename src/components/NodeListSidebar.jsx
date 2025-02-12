@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, List, ListItem, Button, Tooltip, Input } from '@chakra-ui/react';
 import { getAddColor, getLiveColor } from '../utils/colors';
 
 const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredNodes = nodes.filter((node) =>
-    node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredNodes = useMemo(() => {
+    return nodes.filter((node) =>
+      node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [nodes, searchTerm]);
   const isLocalNode = (node) => !router?.getElement(node.id);
 
   return (
@@ -30,33 +32,33 @@ const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
       />
       <List spacing={3}>
         {filteredNodes.map((node) => {
-        const local = isLocalNode(node);
+          const local = isLocalNode(node);
 
-        return (
-          <Tooltip label={node.data.label} key={node.id}>
-            <ListItem
-              cursor={local ? "not-allowed" : "pointer"}
-              onClick={() => !local && onNodeClick(node.id)}
-              whiteSpace="nowrap"
-              overflow="hidden"
-              textOverflow="ellipsis"
-            >
-              <Button 
-                width="100%" 
-                justifyContent="flex-start"
-                backgroundColor={local ? `${getAddColor()}` : "white"}
-                _hover={local ? {} : { backgroundColor: `${getLiveColor()}` }} 
-                isDisabled={local}
+          return (
+            <Tooltip label={node.data.label} key={node.id}>
+              <ListItem
+                cursor={local ? "not-allowed" : "pointer"}
+                onClick={() => !local && onNodeClick(node.id)}
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
               >
-                {node.data.label}
-              </Button>
-            </ListItem>
-          </Tooltip>
-        );
-      })}
+                <Button
+                  width="100%"
+                  justifyContent="flex-start"
+                  backgroundColor={local ? getAddColor() : "white"}
+                  _hover={local ? {} : { backgroundColor: getLiveColor() }}
+                  isDisabled={local}
+                >
+                  {node.data.label}
+                </Button>
+              </ListItem>
+            </Tooltip>
+          );
+        })}
       </List>
     </Box>
   );
 };
 
-export default NodeListSidebar;
+export default React.memo(NodeListSidebar);

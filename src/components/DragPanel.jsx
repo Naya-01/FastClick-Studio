@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Box, Text, Input, List, ListItem, Button, Tooltip } from '@chakra-ui/react';
 import { parseXMLFile } from '../services/elementService';
 import { getLiveColor } from '../utils/colors';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 150;
 
-export const DragPanel = () => {
+const DragPanel = () => {
   const [elements, setElements] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = useCallback((event) => {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -21,16 +21,18 @@ export const DragPanel = () => {
       };
       reader.readAsText(file);
     }
-  };
+  }, []);
 
-  const onDragStart = (event, element) => {
+  const onDragStart = useCallback((event, element) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify(element));
     event.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const filteredElements = elements.filter((element) =>
-    element.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredElements = useMemo(() => {
+    return elements.filter((element) =>
+      element.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [elements, searchTerm]);
 
   const maxPages = Math.ceil(filteredElements.length / ITEMS_PER_PAGE);
   if (currentPage >= maxPages && maxPages > 0) {
@@ -38,7 +40,9 @@ export const DragPanel = () => {
   }
 
   const startIdx = currentPage * ITEMS_PER_PAGE;
-  const visibleElements = filteredElements.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+  const visibleElements = useMemo(() => {
+    return filteredElements.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+  }, [filteredElements, startIdx]);
 
   return (
     <Box
@@ -47,7 +51,7 @@ export const DragPanel = () => {
       borderRight="1px solid #ccc"
       background="#f9f9f9"
       overflowY="auto"
-      position="fixed"
+      //position="fixed"
       left="0"
       top="0"
       bottom="0"
@@ -88,7 +92,13 @@ export const DragPanel = () => {
               overflow="hidden"
               textOverflow="ellipsis"
             >
-              <Button width="100%" justifyContent="flex-start" backgroundColor="white" _hover={{ backgroundColor: getLiveColor() }} p={2}>
+              <Button
+                width="100%"
+                justifyContent="flex-start"
+                backgroundColor="white"
+                _hover={{ backgroundColor: getLiveColor() }}
+                p={2}
+              >
                 <Box textAlign="left">
                   <Text fontWeight="bold">{element.name}</Text>
                 </Box>
@@ -99,6 +109,14 @@ export const DragPanel = () => {
       </List>
 
       <Box mt={4} textAlign="center">
+        {startIdx + ITEMS_PER_PAGE < filteredElements.length && (
+          <Button 
+            width="100%" 
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+          >
+            Next
+          </Button>
+        )}
         {currentPage > 0 && (
           <Button 
             width="100%" 
@@ -108,15 +126,9 @@ export const DragPanel = () => {
             Previous
           </Button>
         )}
-        {startIdx + ITEMS_PER_PAGE < filteredElements.length && (
-          <Button 
-            width="100%" 
-            onClick={() => setCurrentPage((prev) => prev + 1)}
-          >
-            Next
-          </Button>
-        )}
       </Box>
     </Box>
   );
 };
+
+export default React.memo(DragPanel);

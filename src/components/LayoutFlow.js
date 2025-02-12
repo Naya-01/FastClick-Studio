@@ -27,7 +27,7 @@ import NodeModal from './NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
-import { DragPanel } from './DragPanel';
+import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
 
