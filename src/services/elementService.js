@@ -1,21 +1,35 @@
+const MIN = 0;
+const MAX = 100;
+
 export const parsePortCount = (portCount) => {
     if (!portCount) {
-      return { inputs: "any", outputs: "any" }; // Par défaut, si "portcount" est absent
+      return { inputs: {min:MIN, max:MAX}, outputs: {min:MIN, max:MAX} }; // Par défaut, si "portcount" est absent
     }
   
     const [inputPart, outputPart] = portCount.split('/');
   
     const parseValue = (value) => {
-      if (!value || value === "-") return "any";
-      if (value.includes('-')) {
-        return value.split('-').map(Number);
+      if (!value || value === "-") return {min:MIN, max:MAX};
+      if (value.endsWith('-')) {
+        return { min: Number(value.replace('-', '')), max: MAX};
       }
-      return isNaN(Number(value)) ? "any" : Number(value);
+      if (value.includes('-')) {
+        const [min, max] = value.split('-').map(Number);
+        return { min, max };
+      }
+      return Number(value);
     };
+
+    const inputs = parseValue(inputPart);
+    let outputs = parseValue(outputPart);
+
+    if (outputPart === "=") {
+      outputs = { ...inputs };
+    }
   
     return {
-      inputs: parseValue(inputPart),
-      outputs: parseValue(outputPart),
+      inputs: inputs,
+      outputs: outputs,
     };
   };
   
@@ -32,9 +46,11 @@ export const parsePortCount = (portCount) => {
   
           if (!name) return null;
   
+          const { inputs, outputs } = parsePortCount(portCount);  
           return {
             name,
-            ...parsePortCount(portCount),
+            inputs,
+            outputs,
           };
         })
         .filter(Boolean);

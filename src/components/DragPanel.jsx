@@ -5,6 +5,14 @@ import { getLiveColor } from '../utils/colors';
 
 const ITEMS_PER_PAGE = 10;
 
+const defaultNode = { 
+  id: '', 
+  type: '', 
+  configuration: '', 
+  inputs: 1, 
+  outputs: 1 
+};
+
 const DragPanel = () => {
   const [elements, setElements] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +77,7 @@ const DragPanel = () => {
       />
       <Box
         draggable
-        onDragStart={(event) => onDragStart(event, 'default')}
+        onDragStart={(event) => onDragStart(event, defaultNode)}
         style={{
           border: '1px dashed #ccc',
           padding: '10px',

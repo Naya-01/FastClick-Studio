@@ -204,6 +204,16 @@ const LayoutFlow = () => {
         y: event.clientY,
       });
 
+      const elementData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
+
+      setEditNodeData({
+        id: '',
+        type: elementData.name || '',
+        configuration: '',
+        inputs: elementData.inputs,
+        outputs: elementData.outputs,
+      });
+
       setNewNodePosition(position);
       setIsAddNodeModalOpen(true);
     },
@@ -334,7 +344,7 @@ const LayoutFlow = () => {
         isOpen={isAddNodeModalOpen} 
         onClose={() => setIsAddNodeModalOpen(false)} 
         onConfirm={handleAddNode} 
-        initialNodeData={null} 
+        initialNodeData={editNodeData} 
       />
 
       <NodeModal 
