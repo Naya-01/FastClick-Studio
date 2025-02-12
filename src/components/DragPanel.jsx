@@ -3,7 +3,7 @@ import { Box, Text, Input, List, ListItem, Button, Tooltip } from '@chakra-ui/re
 import { parseXMLFile } from '../services/elementService';
 import { getLiveColor } from '../utils/colors';
 
-const ITEMS_PER_PAGE = 150;
+const ITEMS_PER_PAGE = 10;
 
 const DragPanel = () => {
   const [elements, setElements] = useState([]);
@@ -98,8 +98,9 @@ const DragPanel = () => {
                 backgroundColor="white"
                 _hover={{ backgroundColor: getLiveColor() }}
                 p={2}
+                pointerEvents="none"
               >
-                <Box textAlign="left">
+                <Box textAlign="left" pointerEvents="auto">
                   <Text fontWeight="bold">{element.name}</Text>
                 </Box>
               </Button>
