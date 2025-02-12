@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Button, Text } from '@chakra-ui/react';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Button,
+  Text,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+} from '@chakra-ui/react';
 
-const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false }) => {
+const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false, router }) => {
 
   const defaultNode = { 
     id: '', 
@@ -12,6 +25,7 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
   };
 
   const [nodeData, setNodeData] = useState(initialNodeData || defaultNode);
+  const [errors, setErrors] = useState({ id: '', type: '' });
 
 
   const renderField = (fieldName, label) => {
@@ -61,9 +75,37 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
 
   useEffect(() => {
     setNodeData(initialNodeData || defaultNode);
+    setErrors({ id: '', type: '' });
   }, [initialNodeData]);
 
   const handleConfirm = () => {
+    const trimmedId = nodeData.id.trim();
+    const trimmedType = nodeData.type.trim();
+
+    let hasError = false;
+    const newErrors = { id: '', type: '' };
+    if (trimmedId === '') {
+      newErrors.id = 'The node name is required.';
+      hasError = true;
+    }
+    if (trimmedType === '') {
+      newErrors.type = 'The node class is required.';
+      hasError = true;
+    }
+
+    if (router && router.getElement && trimmedId !== '') {
+      const existing = router.getElement(trimmedId);
+      if (existing && (!isEdit || (isEdit && trimmedId !== initialNodeData.id.trim()))) {
+        newErrors.id = 'This node name is already in use.';
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      return;
+    }
+
     const formatField = (field) => {
       if (typeof field === 'object') {
         return (field.number !== undefined ? field.number : field.min);
@@ -83,6 +125,7 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
         onConfirm(formattedNodeData);
     }
     setNodeData(defaultNode);
+    setErrors({ id: '', type: '' });
     onClose();
   };
 
@@ -92,18 +135,36 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
       <ModalContent>
         <ModalHeader>{isEdit ? "Edit Node" : "Add New Node"}</ModalHeader>
         <ModalBody>
-          <Input
-            placeholder="Node Name"
-            value={nodeData.id}
-            onChange={(e) => setNodeData({ ...nodeData, id: e.target.value })}
-            mb={3}
-          />
-          <Input
-            placeholder="Node Class"
-            value={nodeData.type}
-            onChange={(e) => setNodeData({ ...nodeData, type: e.target.value })}
-            mb={3}
-          />
+        <FormControl isInvalid={!!errors.id} isRequired mb={3}>
+            <FormLabel>Node Name</FormLabel>
+            <Input
+              placeholder="Node Name"
+              value={nodeData.id}
+              onChange={(e) => {
+                setNodeData({ ...nodeData, id: e.target.value });
+                if (e.target.value.trim() !== '') {
+                  setErrors((prev) => ({ ...prev, id: false }));
+                }
+              }}
+            />
+            {errors.id && <FormErrorMessage>{errors.id}</FormErrorMessage>}
+          </FormControl>
+
+          <FormControl isInvalid={!!errors.type} isRequired mb={3}>
+            <FormLabel>Node Class</FormLabel>
+            <Input
+              placeholder="Node Class"
+              value={nodeData.type}
+              onChange={(e) => {
+                setNodeData({ ...nodeData, type: e.target.value });
+                if (e.target.value.trim() !== '') {
+                  setErrors((prev) => ({ ...prev, type: false }));
+                }
+              }}
+            />
+            {errors.type && <FormErrorMessage>{errors.type}</FormErrorMessage>}
+          </FormControl>
+
           <Input
             placeholder="Configuration"
             value={nodeData.configuration}

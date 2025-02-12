@@ -345,6 +345,7 @@ const LayoutFlow = () => {
         onClose={() => setIsAddNodeModalOpen(false)} 
         onConfirm={handleAddNode} 
         initialNodeData={editNodeData} 
+        router={router}
       />
 
       <NodeModal 
@@ -353,6 +354,7 @@ const LayoutFlow = () => {
         onConfirm={handleEditNode} 
         initialNodeData={editNodeData} 
         isEdit={true} 
+        router={router}
       />
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
