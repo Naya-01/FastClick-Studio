@@ -27,7 +27,7 @@ import NodeModal from './NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
-import { DragPanel } from './DragPanel';
+import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
 
@@ -63,7 +63,7 @@ const LayoutFlow = () => {
     updateNodeInternals
   );
 
-  const { generateClickConfig } = useClickConfig(nodes, edges, router);
+  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError);
 
 
   const fetchData = () => {
@@ -204,6 +204,16 @@ const LayoutFlow = () => {
         y: event.clientY,
       });
 
+      const elementData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
+
+      setEditNodeData({
+        id: '',
+        type: elementData.name || '',
+        configuration: '',
+        inputs: elementData.inputs,
+        outputs: elementData.outputs,
+      });
+
       setNewNodePosition(position);
       setIsAddNodeModalOpen(true);
     },
@@ -334,7 +344,8 @@ const LayoutFlow = () => {
         isOpen={isAddNodeModalOpen} 
         onClose={() => setIsAddNodeModalOpen(false)} 
         onConfirm={handleAddNode} 
-        initialNodeData={null} 
+        initialNodeData={editNodeData} 
+        router={router}
       />
 
       <NodeModal 
@@ -343,6 +354,7 @@ const LayoutFlow = () => {
         onConfirm={handleEditNode} 
         initialNodeData={editNodeData} 
         isEdit={true} 
+        router={router}
       />
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
