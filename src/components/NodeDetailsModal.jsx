@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -20,6 +20,7 @@ import {
   Input,
 } from '@chakra-ui/react';
 import { WebsocketService } from '../services/webSocketService';
+import ThroughputGraph from './ThroughputGraph';
 
 const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   const [handlers, setHandlers] = useState([]);
@@ -28,6 +29,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   const [selectedHandler, setSelectedHandler] = useState("");
   const [handlerDetails, setHandlerDetails] = useState("");
   const [editableValue, setEditableValue] = useState("");
+  const [showGraph, setShowGraph] = useState(false);
   const websocketService = new WebsocketService();
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -93,6 +95,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
     setSelectedHandler("");
     setHandlerDetails("");
     setEditableValue("");
+    setShowGraph(false);
     onClose();
   };
 
@@ -200,12 +203,24 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   ) : (
                     <Box>{handlerDetails || "Handler details will appear here when selected"}</Box>
                   )}
+                  {showGraph && (
+                    <ThroughputGraph
+                      onHide={() => setShowGraph(false)}
+                      showGraph={showGraph}
+                      selectedNode={selectedNode}
+                    />
+                  )}
                 </Box>
               </Box>
             </>
           )}
         </ModalBody>
         <ModalFooter>
+        {handlers.find(handler => handler.name.toLowerCase() === "count") && (
+          <Button mr={3} colorScheme="purple" onClick={() => setShowGraph(true)}>
+            Show Throughput Graph
+          </Button>
+        )}
           <Button colorScheme="blue" onClick={handleClose}>Close</Button>
         </ModalFooter>
       </ModalContent>
