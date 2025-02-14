@@ -30,6 +30,12 @@ import { GraphControls } from './GraphControls';
 import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
+import ProposalEdge from './ProposalEdge';
+import {getLayoutedElements} from '../utils/layoutUtils';
+
+const edgeTypes = {
+  proposalEdge: ProposalEdge,
+};
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -38,6 +44,7 @@ const nodeTypes = {
 const LayoutFlow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [configUpdated, setConfigUpdated] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [router, setRouter] = useState(null);
@@ -52,7 +59,11 @@ const LayoutFlow = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const { screenToFlowPosition } = useReactFlow();
+  const nodesRef = useRef([]);
 
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
   const webSocketService = new WebsocketService();
 
@@ -63,19 +74,34 @@ const LayoutFlow = () => {
     updateNodeInternals
   );
 
-  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError);
+  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigUpdated);
 
-
-  const fetchData = () => {
+  const fetchData = async () => {
       const subscription = webSocketService.getFlatConfig().subscribe({
-        next: (configData) => {
+        next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
+          await routerTreeModel.fetchHandlersForElementsAsync();
           setRouter(routerTreeModel);
           const pairs = routerTreeModel.getAllPairs();
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+            const edgesWithProposal = layoutedEdges.map((edge) => {
+              const sourceNodeId = edge.source;
+              const routerElement = routerTreeModel.getElement(sourceNodeId);
+              const hasCount = routerElement?.handlers.find(handler => handler.name.toLowerCase() === "count") ?? false;
+          
+              return {
+                ...edge,
+                type: 'proposalEdge',
+                data: {
+                  showAdd: !hasCount,
+                  onAddCounter: handleAddCounter,
+                },
+              };
+            });
+          
             setNodes(layoutedNodes);
-            setEdges(layoutedEdges);
+            setEdges(edgesWithProposal);
           });
         },
         error: (error) => {
@@ -88,6 +114,14 @@ const LayoutFlow = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (configUpdated) {
+      fetchData();
+      setConfigUpdated(false);
+      showAlert('Configuration Updated', 'The configuration has been updated successfully.', 'success');
+    }
+  }, [configUpdated]);
 
   useEffect(() => {
     if (connectionError) {
@@ -132,8 +166,84 @@ const LayoutFlow = () => {
     }
   };
 
-  const handleAddNode = (newNode) => {
+  const handleAddCounter = useCallback((edgeId) => {
+    setEdges((prevEdges) => {
+      const edgeToReplace = prevEdges.find((e) => e.id === edgeId);
+      if (!edgeToReplace) return prevEdges;
+  
+      const {
+        source,
+        target,
+        sourceHandle,
+        targetHandle,
+        markerEnd,
+        style,
+        type,
+        animated,
+        zIndex,
+      } = edgeToReplace;
+
+      const sourceNode = nodesRef.current.find((n) => n.id === source);
+      const targetNode = nodesRef.current.find((n) => n.id === target);
+  
+      if (!sourceNode || !targetNode) {
+        return prevEdges;
+      }
+  
+      const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+      const midY = (sourceNode.position.y + targetNode.position.y) / 2;
+  
+      const newNodeId = `counter_${source}_${target}`;
+      const newNode = {
+        id: newNodeId,
+        type: 'Counter',
+        inputs: 1,
+        outputs: 1,
+        configuration: '',
+      };
+  
+      handleAddNode(newNode, { x: midX, y: midY });
+  
+      const updatedEdges = prevEdges.filter((e) => e.id !== edgeId);
+  
+      const edge1Id = `e${source}-${newNodeId}-${Date.now()}-1`;
+      const newEdge1 = {
+        ...edgeToReplace,
+        id: edge1Id,
+        source,
+        target: newNodeId,
+        sourceHandle,
+        targetHandle: 'input-handle-0',
+        markerEnd: markerEnd,
+        style: style,
+        type: type,
+        animated: animated,
+        zIndex: zIndex,
+      };
+  
+      const edge2Id = `e${newNodeId}-${target}-${Date.now()}-2`;
+      const newEdge2 = {
+        ...edgeToReplace,
+        id: edge2Id,
+        source: newNodeId,
+        target,
+        sourceHandle: 'output-handle-0',
+        targetHandle,
+        markerEnd: markerEnd,
+        style: style,
+        type: type,
+        animated: animated,
+        zIndex: zIndex,
+      };
+  
+      updatedEdges.push(newEdge1, newEdge2);
+      return updatedEdges;
+    });
+  }, [nodesRef, setEdges]);
+
+  const handleAddNode = (newNode, forcedPosition = null) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
+    const finalPosition = forcedPosition ?? newNodePosition; 
   
     const newNodeConfig = {
       id: newNode.id,
@@ -144,7 +254,7 @@ const LayoutFlow = () => {
         type: newNode.type,
         configuration: newNode.configuration,
       },
-      position: newNodePosition,
+      position: finalPosition,
       type: 'dynamicHandlesNode',
       style: {
         border: `1px solid ${getAddBorderColor()}`,
@@ -173,7 +283,6 @@ const LayoutFlow = () => {
     return { x: adjustedX, y: adjustedY };
   };
   
-
   const onContextMenu = useCallback(
     (event, element, type) => {
       event.preventDefault();
@@ -190,7 +299,6 @@ const LayoutFlow = () => {
     [setContextMenu]
   );
   
-
   const onPaneClick = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -220,10 +328,10 @@ const LayoutFlow = () => {
     [screenToFlowPosition]
   );
 
-  const onDragOver = (event) => {
+  const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-  };
+  });
 
   const handleEditNode = (updatedNode, oldId) => {
     setNodes((prevNodes) =>
@@ -263,7 +371,6 @@ const LayoutFlow = () => {
       })
     );
 
-
     setEdges((prevEdges) =>
       prevEdges.map((edge) => {
         if (edge.source === oldId) {
@@ -280,7 +387,6 @@ const LayoutFlow = () => {
     setEditNodeData(null);
   };
   
-  
   const openEditModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
     setEditNodeData({
@@ -293,9 +399,16 @@ const LayoutFlow = () => {
     setIsEditNodeModalOpen(true);
   };
   
+  const handleReorganizeNodes = async () => {
+    const resetNodes = nodesRef.current.map((node) => ({
+      ...node,
+      position: { x: 0, y: 0 },
+    }));
+    const layout = await getLayoutedElements(resetNodes, edges);
+    setNodes(layout.nodes);
+    setEdges(layout.edges);
+  };
   
-  
-
   return (
     <>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -308,6 +421,7 @@ const LayoutFlow = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onConnect={onConnect}
             onNodeContextMenu={(event, node) => onContextMenu(event, node, 'node')}
             onEdgeContextMenu={(event, edge) => onContextMenu(event, edge, 'edge')}
@@ -337,6 +451,7 @@ const LayoutFlow = () => {
         <GraphControls 
           onDownloadImage={handleDownloadImage}
           onGenerateConfig={generateClickConfig}
+          onReorganize={handleReorganizeNodes}
         />
       </Box>
 
@@ -357,7 +472,7 @@ const LayoutFlow = () => {
         router={router}
       />
 
-      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
+      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} router={router}/>
     </>
   );
 };

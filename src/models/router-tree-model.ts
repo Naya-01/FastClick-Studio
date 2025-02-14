@@ -1,12 +1,15 @@
 import { lespairs } from "../data/pairs";
 import { Pair } from "./pair";
+import { WebsocketService } from '../services/webSocketService';
+import { lastValueFrom } from "rxjs";
 
 export class RouterElement {
   constructor(
     public name: string,
     public type: string,
     public configuration: string,
-    public children: RouterElement[] = []
+    public children: RouterElement[] = [],
+    public handlers?: { name: string; type: string }[]
   ) {}
 }
 
@@ -20,10 +23,11 @@ interface SequenceInfo {
 export class RouterTreeModel {
   private elements: Map<string, RouterElement> = new Map();
   private pairs: Pair[] = [];
+  private websocketService = new WebsocketService();
 
   constructor(config: string) {
     this.parseElements(config);
-    this.pairs = this.parseClickString(config);    
+    this.pairs = this.parseClickString(config);
   }
 
 
@@ -185,6 +189,31 @@ export class RouterTreeModel {
     });
   
     return pairs;
+  }
+
+  private parseHandlers(data: string): { name: string; type: string }[] {
+    return data
+      .split("\n")
+      .map((line) => {
+        const [name, type] = line.split(/\s+/);
+        return { name, type };
+      })
+      .filter(({ name }) => name);
+  }
+
+  public async fetchHandlersForElementsAsync(): Promise<void> {
+    const promises: Promise<void>[] = [];
+    this.elements.forEach((element, name) => {
+      const promise = lastValueFrom(this.websocketService.getAllHandlersFields(name))
+        .then((data) => {
+          element.handlers = this.parseHandlers(data);
+        })
+        .catch((error) => {
+          console.error("Error fetching handlers for", name, error);
+        });
+      promises.push(promise);
+    });
+    await Promise.all(promises);
   }
 
   getElement(name: string): RouterElement | undefined {

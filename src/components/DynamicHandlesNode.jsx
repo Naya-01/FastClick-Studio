@@ -14,26 +14,31 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
   const inputHandles = useMemo(() => {
     const handles = [];
     for (let i = 0; i < inputs; i++) {
-      handles.push(
-        <Handle
-          key={`input-handle-${i}`}
-          type="target"
-          id={`input-handle-${i}`}
-          position={(isHorizontal ? targetPosition : Position.Top)}
-          style={{
-            width: '15px',
-            height: '8px',
-            background: '#555',
-            borderRadius: 0,
-            position: 'absolute',
-            ...(isHorizontal ? {
+      const triangleStyle = {
+        width: '15px',
+        height: '8px',
+        background: 'transparent',
+        position: 'absolute',
+        pointerEvents: 'none',
+      };
+
+      const handleStyle = {
+        width: '15px',
+        height: '8px',
+        background: 'transparent',
+        border: 'none',
+        position: 'absolute',
+        ...(isHorizontal
+          ? {
               ...(targetPosition === 'left' || targetPosition === 'right'
                 ? {
                     top: `${(i + 1) * (100 / (inputs + 1))}%`,
                     transform: 'translateY(-50%)',
+                    [targetPosition]: '-8px',
                   }
                 : {
-                    right: `${(i + 1) * (100 / (inputs + 1))}%`,
+                    [targetPosition === 'top' ? 'bottom' : 'top']: '-8px',
+                    left: `${(i + 1) * (100 / (inputs + 1))}%`,
                     transform: 'translateX(-50%)',
                   }),
             }
@@ -42,10 +47,34 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
               left: `${(i + 1) * (100 / (inputs + 1))}%`,
               transform: 'translateX(-50%)',
               top: '-10px',
-            }
-          ),
-          }}
-      />
+            }),
+      };
+
+      handles.push(
+        <>
+          <Handle
+            type="target"
+            id={`input-handle-${i}`}
+            position={isHorizontal ? targetPosition : Position.Top}
+            style={handleStyle}
+            
+          />
+          <div style={{ ...handleStyle, ...triangleStyle }}>
+            <svg
+            width="15"
+            height="8"
+            viewBox="0 0 15 8"
+            style={{ display: 'block' }}
+            >
+              <path
+                d="M 0 0 L 15 0 L 7.5 8 Z"
+                fill="#555"
+                stroke="#333"
+                strokeWidth="0.5"
+              />
+            </svg>
+          </div>
+        </>
       );
     }
     return handles;

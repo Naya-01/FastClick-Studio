@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -20,38 +20,24 @@ import {
   Input,
 } from '@chakra-ui/react';
 import { WebsocketService } from '../services/webSocketService';
+import ThroughputGraph from './ThroughputGraph';
 
-const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
+const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
   const [handlers, setHandlers] = useState([]);
   const [filteredHandlers, setFilteredHandlers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedHandler, setSelectedHandler] = useState("");
   const [handlerDetails, setHandlerDetails] = useState("");
   const [editableValue, setEditableValue] = useState("");
+  const [showGraph, setShowGraph] = useState(false);
   const websocketService = new WebsocketService();
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const parseHandlers = (data) => {
-    return data
-      .split("\n")
-      .map((line) => {
-        const [name, type] = line.split(/\s+/);
-        return { name, type };
-      })
-      .filter(({ name }) => name);
-  };
-
   useEffect(() => {
     if (selectedNode) {
-      const subscription = websocketService.getAllHandlersFields(selectedNode.id).subscribe({
-        next: (data) => {
-          const parsedHandlers = parseHandlers(data);
-          setHandlers(parsedHandlers);
-          setFilteredHandlers(parsedHandlers);
-        },
-        error: (error) => console.error("Error fetching handler names:", error),
-      });
-      return () => subscription.unsubscribe();
+      const element = router.getElement(selectedNode.id);
+      setHandlers(element.handlers);
+      setFilteredHandlers(element.handlers);
     }
   }, [selectedNode]);
 
@@ -93,6 +79,7 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
     setSelectedHandler("");
     setHandlerDetails("");
     setEditableValue("");
+    setShowGraph(false);
     onClose();
   };
 
@@ -200,17 +187,29 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
                   ) : (
                     <Box>{handlerDetails || "Handler details will appear here when selected"}</Box>
                   )}
+                  {showGraph && (
+                    <ThroughputGraph
+                      onHide={() => setShowGraph(false)}
+                      showGraph={showGraph}
+                      selectedNode={selectedNode}
+                    />
+                  )}
                 </Box>
               </Box>
             </>
           )}
         </ModalBody>
         <ModalFooter>
+        {handlers.find(handler => handler.name.toLowerCase() === "count") && (
+          <Button mr={3} colorScheme="purple" onClick={() => setShowGraph(true)}>
+            Show Throughput Graph
+          </Button>
+        )}
           <Button colorScheme="blue" onClick={handleClose}>Close</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
   );
-};
+});
 
 export default NodeDetailsModal;
