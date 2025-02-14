@@ -1,6 +1,7 @@
 import { lespairs } from "../data/pairs";
 import { Pair } from "./pair";
 import { WebsocketService } from '../services/webSocketService';
+import { lastValueFrom } from "rxjs";
 
 export class RouterElement {
   constructor(
@@ -26,8 +27,7 @@ export class RouterTreeModel {
 
   constructor(config: string) {
     this.parseElements(config);
-    this.pairs = this.parseClickString(config);    
-    this.fetchHandlersForElements();
+    this.pairs = this.parseClickString(config);
   }
 
 
@@ -201,15 +201,19 @@ export class RouterTreeModel {
       .filter(({ name }) => name);
   }
 
-  private fetchHandlersForElements(): void {
+  public async fetchHandlersForElementsAsync(): Promise<void> {
+    const promises: Promise<void>[] = [];
     this.elements.forEach((element, name) => {
-      this.websocketService.getAllHandlersFields(name).subscribe({
-        next: (data) => {
+      const promise = lastValueFrom(this.websocketService.getAllHandlersFields(name))
+        .then((data) => {
           element.handlers = this.parseHandlers(data);
-        },
-        error: (error: any) => console.error("Error fetching handlers for", name, error),
-      });
+        })
+        .catch((error) => {
+          console.error("Error fetching handlers for", name, error);
+        });
+      promises.push(promise);
     });
+    await Promise.all(promises);
   }
 
   getElement(name: string): RouterElement | undefined {

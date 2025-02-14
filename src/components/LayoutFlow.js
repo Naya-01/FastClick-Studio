@@ -76,10 +76,11 @@ const LayoutFlow = () => {
   const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError);
 
 
-  const fetchData = () => {
+  const fetchData = async () => {
       const subscription = webSocketService.getFlatConfig().subscribe({
-        next: (configData) => {
+        next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
+          await routerTreeModel.fetchHandlersForElementsAsync();
           setRouter(routerTreeModel);
           const pairs = routerTreeModel.getAllPairs();
   
