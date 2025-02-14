@@ -30,6 +30,11 @@ import { GraphControls } from './GraphControls';
 import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
+import ProposalEdge from './ProposalEdge';
+
+const edgeTypes = {
+  proposalEdge: ProposalEdge,
+};
 
 const nodeTypes = {
   dynamicHandlesNode: DynamicHandlesNode,
@@ -52,6 +57,11 @@ const LayoutFlow = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const { screenToFlowPosition } = useReactFlow();
+  const nodesRef = useRef([]);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
 
   const webSocketService = new WebsocketService();
@@ -74,8 +84,23 @@ const LayoutFlow = () => {
           const pairs = routerTreeModel.getAllPairs();
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+            const edgesWithProposal = layoutedEdges.map((edge) => {
+              const sourceNodeId = edge.source;
+              const routerElement = routerTreeModel.getElement(sourceNodeId);
+              const hasCount = routerElement?.handlers.find(handler => handler.name.toLowerCase() === "count") ?? false;
+          
+              return {
+                ...edge,
+                type: 'proposalEdge',
+                data: {
+                  showAdd: !hasCount,
+                  onAddCounter: handleAddCounter,
+                },
+              };
+            });
+          
             setNodes(layoutedNodes);
-            setEdges(layoutedEdges);
+            setEdges(edgesWithProposal);
           });
         },
         error: (error) => {
@@ -132,8 +157,91 @@ const LayoutFlow = () => {
     }
   };
 
-  const handleAddNode = (newNode) => {
+  const handleAddCounter = (edgeId) => {
+    setEdges((prevEdges) => {
+      const edgeToReplace = prevEdges.find((e) => e.id === edgeId);
+      if (!edgeToReplace) return prevEdges;
+  
+      const {
+        source,
+        target,
+        sourceHandle,
+        targetHandle,
+        markerEnd,
+        style,
+        type,
+        animated,
+        zIndex,
+      } = edgeToReplace;
+
+      console.log("source", source);
+
+  
+      const sourceNode = nodesRef.current.find((n) => n.id === source);
+      const targetNode = nodesRef.current.find((n) => n.id === target);
+
+      console.log("sourceNode", sourceNode);
+      console.log("targetNode", targetNode);
+      console.log("nodes", nodes);
+  
+      if (!sourceNode || !targetNode) {
+        return prevEdges;
+      }
+  
+      const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+      const midY = (sourceNode.position.y + targetNode.position.y) / 2;
+  
+      const newNodeId = `counter_${source}_${target}`;
+      const newNode = {
+        id: newNodeId,
+        type: 'Counter',
+        inputs: 1,
+        outputs: 1,
+        configuration: '',
+      };
+  
+      handleAddNode(newNode, { x: midX, y: midY });
+  
+      const updatedEdges = prevEdges.filter((e) => e.id !== edgeId);
+  
+      const edge1Id = `e${source}-${newNodeId}-${Date.now()}-1`;
+      const newEdge1 = {
+        ...edgeToReplace,
+        id: edge1Id,
+        source,
+        target: newNodeId,
+        sourceHandle,
+        targetHandle: 'input-handle-0',
+        markerEnd: markerEnd,
+        style: style,
+        type: type,
+        animated: animated,
+        zIndex: zIndex,
+      };
+  
+      const edge2Id = `e${newNodeId}-${target}-${Date.now()}-2`;
+      const newEdge2 = {
+        ...edgeToReplace,
+        id: edge2Id,
+        source: newNodeId,
+        target,
+        sourceHandle: 'output-handle-0',
+        targetHandle,
+        markerEnd: markerEnd,
+        style: style,
+        type: type,
+        animated: animated,
+        zIndex: zIndex,
+      };
+  
+      updatedEdges.push(newEdge1, newEdge2);
+      return updatedEdges;
+    });
+  };
+
+  const handleAddNode = (newNode, forcedPosition = null) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
+    const finalPosition = forcedPosition ?? newNodePosition; 
   
     const newNodeConfig = {
       id: newNode.id,
@@ -144,7 +252,7 @@ const LayoutFlow = () => {
         type: newNode.type,
         configuration: newNode.configuration,
       },
-      position: newNodePosition,
+      position: finalPosition,
       type: 'dynamicHandlesNode',
       style: {
         border: `1px solid ${getAddBorderColor()}`,
@@ -308,6 +416,7 @@ const LayoutFlow = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onConnect={onConnect}
             onNodeContextMenu={(event, node) => onContextMenu(event, node, 'node')}
             onEdgeContextMenu={(event, edge) => onContextMenu(event, edge, 'edge')}
@@ -357,7 +466,7 @@ const LayoutFlow = () => {
         router={router}
       />
 
-      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode}/>
+      <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} router={router}/>
     </>
   );
 };

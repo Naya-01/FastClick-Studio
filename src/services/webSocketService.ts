@@ -63,7 +63,7 @@ export class WebsocketService {
     });
   }
 
-  getAllHandlersFields(element: string): Observable<string[]> {
+  getAllHandlersFields(element: string): Observable<string> {
     return new Observable(observer => {
       axios.get(`/fastclick/${element}`, {
         headers: {

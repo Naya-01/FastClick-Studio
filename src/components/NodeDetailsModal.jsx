@@ -22,7 +22,7 @@ import {
 import { WebsocketService } from '../services/webSocketService';
 import ThroughputGraph from './ThroughputGraph';
 
-const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
+const NodeDetailsModal = ({ isOpen, onClose, selectedNode, router }) => {
   const [handlers, setHandlers] = useState([]);
   const [filteredHandlers, setFilteredHandlers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,27 +33,11 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode }) => {
   const websocketService = new WebsocketService();
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const parseHandlers = (data) => {
-    return data
-      .split("\n")
-      .map((line) => {
-        const [name, type] = line.split(/\s+/);
-        return { name, type };
-      })
-      .filter(({ name }) => name);
-  };
-
   useEffect(() => {
     if (selectedNode) {
-      const subscription = websocketService.getAllHandlersFields(selectedNode.id).subscribe({
-        next: (data) => {
-          const parsedHandlers = parseHandlers(data);
-          setHandlers(parsedHandlers);
-          setFilteredHandlers(parsedHandlers);
-        },
-        error: (error) => console.error("Error fetching handler names:", error),
-      });
-      return () => subscription.unsubscribe();
+      const element = router.getElement(selectedNode.id);
+      setHandlers(element.handlers);
+      setFilteredHandlers(element.handlers);
     }
   }, [selectedNode]);
 

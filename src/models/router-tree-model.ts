@@ -1,12 +1,14 @@
 import { lespairs } from "../data/pairs";
 import { Pair } from "./pair";
+import { WebsocketService } from '../services/webSocketService';
 
 export class RouterElement {
   constructor(
     public name: string,
     public type: string,
     public configuration: string,
-    public children: RouterElement[] = []
+    public children: RouterElement[] = [],
+    public handlers?: { name: string; type: string }[]
   ) {}
 }
 
@@ -20,10 +22,12 @@ interface SequenceInfo {
 export class RouterTreeModel {
   private elements: Map<string, RouterElement> = new Map();
   private pairs: Pair[] = [];
+  private websocketService = new WebsocketService();
 
   constructor(config: string) {
     this.parseElements(config);
     this.pairs = this.parseClickString(config);    
+    this.fetchHandlersForElements();
   }
 
 
@@ -185,6 +189,27 @@ export class RouterTreeModel {
     });
   
     return pairs;
+  }
+
+  private parseHandlers(data: string): { name: string; type: string }[] {
+    return data
+      .split("\n")
+      .map((line) => {
+        const [name, type] = line.split(/\s+/);
+        return { name, type };
+      })
+      .filter(({ name }) => name);
+  }
+
+  private fetchHandlersForElements(): void {
+    this.elements.forEach((element, name) => {
+      this.websocketService.getAllHandlersFields(name).subscribe({
+        next: (data) => {
+          element.handlers = this.parseHandlers(data);
+        },
+        error: (error: any) => console.error("Error fetching handlers for", name, error),
+      });
+    });
   }
 
   getElement(name: string): RouterElement | undefined {
