@@ -166,7 +166,7 @@ const LayoutFlow = () => {
     }
   };
 
-  const handleAddCounter = (edgeId) => {
+  const handleAddCounter = useCallback((edgeId) => {
     setEdges((prevEdges) => {
       const edgeToReplace = prevEdges.find((e) => e.id === edgeId);
       if (!edgeToReplace) return prevEdges;
@@ -239,7 +239,7 @@ const LayoutFlow = () => {
       updatedEdges.push(newEdge1, newEdge2);
       return updatedEdges;
     });
-  };
+  }, [nodesRef, setEdges]);
 
   const handleAddNode = (newNode, forcedPosition = null) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
@@ -328,10 +328,10 @@ const LayoutFlow = () => {
     [screenToFlowPosition]
   );
 
-  const onDragOver = (event) => {
+  const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-  };
+  });
 
   const handleEditNode = (updatedNode, oldId) => {
     setNodes((prevNodes) =>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -22,7 +22,7 @@ import {
 import { WebsocketService } from '../services/webSocketService';
 import ThroughputGraph from './ThroughputGraph';
 
-const NodeDetailsModal = ({ isOpen, onClose, selectedNode, router }) => {
+const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
   const [handlers, setHandlers] = useState([]);
   const [filteredHandlers, setFilteredHandlers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -210,6 +210,6 @@ const NodeDetailsModal = ({ isOpen, onClose, selectedNode, router }) => {
       </ModalContent>
     </Modal>
   );
-};
+});
 
 export default NodeDetailsModal;
