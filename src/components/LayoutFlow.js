@@ -31,6 +31,7 @@ import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
 import ProposalEdge from './ProposalEdge';
+import {getLayoutedElements} from '../utils/layoutUtils';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -43,6 +44,7 @@ const nodeTypes = {
 const LayoutFlow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [configUpdated, setConfigUpdated] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [router, setRouter] = useState(null);
@@ -63,7 +65,6 @@ const LayoutFlow = () => {
     nodesRef.current = nodes;
   }, [nodes]);
 
-
   const webSocketService = new WebsocketService();
 
   const { updateNodeHandles, onConnect } = useGraphOperations(
@@ -73,8 +74,7 @@ const LayoutFlow = () => {
     updateNodeInternals
   );
 
-  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError);
-
+  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigUpdated);
 
   const fetchData = async () => {
       const subscription = webSocketService.getFlatConfig().subscribe({
@@ -114,6 +114,14 @@ const LayoutFlow = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (configUpdated) {
+      fetchData();
+      setConfigUpdated(false);
+      showAlert('Configuration Updated', 'The configuration has been updated successfully.', 'success');
+    }
+  }, [configUpdated]);
 
   useEffect(() => {
     if (connectionError) {
@@ -175,15 +183,8 @@ const LayoutFlow = () => {
         zIndex,
       } = edgeToReplace;
 
-      console.log("source", source);
-
-  
       const sourceNode = nodesRef.current.find((n) => n.id === source);
       const targetNode = nodesRef.current.find((n) => n.id === target);
-
-      console.log("sourceNode", sourceNode);
-      console.log("targetNode", targetNode);
-      console.log("nodes", nodes);
   
       if (!sourceNode || !targetNode) {
         return prevEdges;
@@ -282,7 +283,6 @@ const LayoutFlow = () => {
     return { x: adjustedX, y: adjustedY };
   };
   
-
   const onContextMenu = useCallback(
     (event, element, type) => {
       event.preventDefault();
@@ -299,7 +299,6 @@ const LayoutFlow = () => {
     [setContextMenu]
   );
   
-
   const onPaneClick = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -372,7 +371,6 @@ const LayoutFlow = () => {
       })
     );
 
-
     setEdges((prevEdges) =>
       prevEdges.map((edge) => {
         if (edge.source === oldId) {
@@ -389,7 +387,6 @@ const LayoutFlow = () => {
     setEditNodeData(null);
   };
   
-  
   const openEditModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
     setEditNodeData({
@@ -402,9 +399,16 @@ const LayoutFlow = () => {
     setIsEditNodeModalOpen(true);
   };
   
+  const handleReorganizeNodes = async () => {
+    const resetNodes = nodesRef.current.map((node) => ({
+      ...node,
+      position: { x: 0, y: 0 },
+    }));
+    const layout = await getLayoutedElements(resetNodes, edges);
+    setNodes(layout.nodes);
+    setEdges(layout.edges);
+  };
   
-  
-
   return (
     <>
       <Box display="flex" width="100%" height="100vh" position="relative">
@@ -447,6 +451,7 @@ const LayoutFlow = () => {
         <GraphControls 
           onDownloadImage={handleDownloadImage}
           onGenerateConfig={generateClickConfig}
+          onReorganize={handleReorganizeNodes}
         />
       </Box>
 
