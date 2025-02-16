@@ -61,4 +61,18 @@ const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
   );
 };
 
-export default React.memo(NodeListSidebar);
+const areEqual = (prevProps, nextProps) => {
+  if (prevProps.nodes.length !== nextProps.nodes.length) return false;
+
+  for (let i = 0; i < prevProps.nodes.length; i++) {
+    const prevNode = prevProps.nodes[i];
+    const nextNode = nextProps.nodes[i];
+    if (prevNode.id !== nextNode.id) return false;
+    if (prevNode.data.label !== nextNode.data.label) return false;
+  }
+  if (prevProps.router !== nextProps.router) return false;
+
+  return true;
+};
+
+export default React.memo(NodeListSidebar, areEqual);

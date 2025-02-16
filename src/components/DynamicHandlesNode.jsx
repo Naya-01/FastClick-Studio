@@ -51,8 +51,9 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
       };
 
       handles.push(
-        <>
+        <div key={`input-handle-${i}`}>
           <Handle
+            key={`input-handle-${i}`}
             type="target"
             id={`input-handle-${i}`}
             position={isHorizontal ? targetPosition : Position.Top}
@@ -74,7 +75,7 @@ const DynamicHandlesNode = ({ id, data, sourcePosition, targetPosition }) => {
               />
             </svg>
           </div>
-        </>
+        </div>
       );
     }
     return handles;
