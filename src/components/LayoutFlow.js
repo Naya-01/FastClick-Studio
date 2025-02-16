@@ -58,7 +58,7 @@ const LayoutFlow = () => {
   const [connectionError, setConnectionError] = useState(false);
   const navigate = useNavigate();
   const { showAlert } = useAlert();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setCenter } = useReactFlow();
   const nodesRef = useRef([]);
 
   useEffect(() => {
@@ -408,12 +408,28 @@ const LayoutFlow = () => {
     setNodes(layout.nodes);
     setEdges(layout.edges);
   };
+
+  const handleTargetNode = useCallback((id) => {
+    const node = nodes.find(n => n.id === id);
+    if (node && node.position && node.style) {
+      const nodeWidth = parseFloat(node.style.width) || 0;
+      const node_height = parseFloat(node.style.height) || 0;
+      const centerX = node.position.x + nodeWidth / 2;
+      const centerY = node.position.y + node_height / 2;
+      setCenter(centerX, centerY, { duration: 500 });
+    }
+  }, [nodes, setCenter]);
   
   return (
     <>
       <Box display="flex" width="100%" height="100vh" position="relative">
         <DragPanel />
-        <NodeListSidebar nodes={nodes} onNodeClick={openModal} router={router} />
+        <NodeListSidebar 
+          nodes={nodes} 
+          onNodeClick={openModal} 
+          router={router}
+          onTargetNode={handleTargetNode} 
+          />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
