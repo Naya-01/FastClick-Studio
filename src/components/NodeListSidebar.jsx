@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Box, List, ListItem, Button, Tooltip, Input } from '@chakra-ui/react';
+import { Box, List, ListItem, Button, Tooltip, Input, HStack } from '@chakra-ui/react';
 import { getAddColor, getLiveColor } from '../utils/colors';
 
-const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
+const NodeListSidebar = ({nodes, onNodeClick, router, onTargetNode}) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredNodes = useMemo(() => {
@@ -36,22 +36,30 @@ const NodeListSidebar = ({ nodes, onNodeClick, router }) => {
 
           return (
             <Tooltip label={node.data.label} key={node.id}>
-              <ListItem
-                cursor={local ? "not-allowed" : "pointer"}
-                onClick={() => !local && onNodeClick(node.id)}
-                whiteSpace="nowrap"
-                overflow="hidden"
-                textOverflow="ellipsis"
-              >
-                <Button
-                  width="100%"
-                  justifyContent="flex-start"
-                  backgroundColor={local ? getAddColor() : "white"}
-                  _hover={local ? {} : { backgroundColor: getLiveColor() }}
-                  isDisabled={local}
-                >
-                  {node.data.label}
-                </Button>
+              <ListItem>
+                <HStack spacing={2}>
+                  <Button
+                    cursor={local ? "not-allowed" : "pointer"}
+                    overflow="hidden"
+                    whiteSpace="nowrap"
+                    textOverflow="ellipsis"
+                    flex="1"
+                    justifyContent="flex-start"
+                    backgroundColor={local ? getAddColor() : 'white'}
+                    _hover={local ? {} : { backgroundColor: getLiveColor() }}
+                    isDisabled={local}
+                    onClick={() => !local && onNodeClick(node.id)}
+                  >
+                    {node.data.label}
+                  </Button>
+                  <Button
+                    size="xs"
+                    colorScheme="purple"
+                    onClick={() => onTargetNode(node.id)}
+                  >
+                    T
+                  </Button>
+                </HStack>
               </ListItem>
             </Tooltip>
           );
