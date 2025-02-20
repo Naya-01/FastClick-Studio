@@ -18,18 +18,20 @@ import {
   Text,
   useColorModeValue,
   Input,
+  Switch,
+  Flex,
 } from '@chakra-ui/react';
 import { WebsocketService } from '../services/webSocketService';
-import ThroughputGraph from './ThroughputGraph';
+import MultiGraphContainer from './graphs/MultiGraphContainer';
 
-const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
+const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {  
   const [handlers, setHandlers] = useState([]);
   const [filteredHandlers, setFilteredHandlers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedHandler, setSelectedHandler] = useState("");
   const [handlerDetails, setHandlerDetails] = useState("");
   const [editableValue, setEditableValue] = useState("");
-  const [showGraph, setShowGraph] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const websocketService = new WebsocketService();
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -79,7 +81,6 @@ const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
     setSelectedHandler("");
     setHandlerDetails("");
     setEditableValue("");
-    setShowGraph(false);
     onClose();
   };
 
@@ -119,50 +120,60 @@ const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
     <Modal isOpen={isOpen} onClose={handleClose} size="full">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Node Details</ModalHeader>
+        <ModalHeader>
+          Node Details
+          <Flex align="center" ml={4}>
+            <Text mr={2}>Show Graph Mode</Text>
+            <Switch 
+              isChecked={!showDetails} 
+              onChange={() => setShowDetails(!showDetails)} 
+            />
+          </Flex>
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           {selectedNode && (
             <>
-              <Text fontWeight="bold" mb={3}>Node: {selectedNode.data.label}</Text>
+              <Text fontWeight="bold" mb={3} fontSize='2xl'>Node: {selectedNode.data.label}</Text>
 
-              <Box display="flex" height="80vh">
-                <Box width="40%" maxHeight="100%" overflowY="auto" mr={5} flexShrink={0}>
-                  <Box position="sticky" top="0" bg="white" zIndex="1">
-                    <Input
-                      placeholder="Search handlers..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      mb={3}
-                    />
-                  </Box>
-                  <Table variant="simple" size="sm" border="1px solid" borderColor={borderColor}>
-                    <Thead position="sticky" top="40px" bg="white" zIndex="1">
-                      <Tr>
-                        <Th>Handler</Th>
-                        <Th width="100px">Action</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {filteredHandlers.map((handler) => (
-                        <Tr key={handler.name} _hover={{ bg: 'gray.100' }} cursor="pointer">
-                          <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>
-                            {handler.name}
-                          </Td>
-                          <Td borderBottom="1px solid" borderColor={borderColor} width="100px">
-                            {renderActionButton(handler)}
-                          </Td>
+              {showDetails ? (
+                <Box display="flex" height="75vh">
+                  <Box width="40%" maxHeight="100%" overflowY="auto" mr={5} flexShrink={0}>
+                    <Box position="sticky" top="0" bg="white" zIndex="1">
+                      <Input
+                        placeholder="Search handlers..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        mb={3}
+                      />
+                    </Box>
+                    <Table variant="simple" size="sm" border="1px solid" borderColor={borderColor}>
+                      <Thead position="sticky" top="40px" bg="white" zIndex="1">
+                        <Tr>
+                          <Th>Handler</Th>
+                          <Th width="100px">Action</Th>
                         </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </Box>
+                      </Thead>
+                      <Tbody>
+                        {filteredHandlers.map((handler) => (
+                          <Tr key={handler.name} _hover={{ bg: 'gray.100' }} cursor="pointer">
+                            <Td borderBottom="1px solid" borderColor={borderColor} onClick={() => fetchHandlerDetails(handler)}>
+                              {handler.name}
+                            </Td>
+                            <Td borderBottom="1px solid" borderColor={borderColor} width="100px">
+                              {renderActionButton(handler)}
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
 
-                <Box flex="1" p={3} border="1px solid" borderColor={borderColor} bg="gray.50" rounded="md" overflowY="auto">
-                  <Text fontSize="lg" fontWeight="bold" mb={2}>
-                    {selectedHandler || "Select a handler"}
-                  </Text>
-                  {handlers.find((h) => h.name === selectedHandler && h.type.includes('r') && h.type.includes('w')) ? (
+                  <Box flex="1" p={3} border="1px solid" borderColor={borderColor} bg="gray.50" rounded="md" overflowY="auto">
+                    <Text fontSize="lg" fontWeight="bold" mb={2}>
+                      {selectedHandler || "Select a handler"}
+                    </Text>
+                    {handlers.find((h) => h.name === selectedHandler && h.type.includes('r') && h.type.includes('w')) ? (
                     <>
                       <Box mb={4}>{handlerDetails || "Handler details will appear here when selected"}</Box>
                       
@@ -187,24 +198,15 @@ const NodeDetailsModal = memo(({ isOpen, onClose, selectedNode, router }) => {
                   ) : (
                     <Box>{handlerDetails || "Handler details will appear here when selected"}</Box>
                   )}
-                  {showGraph && (
-                    <ThroughputGraph
-                      onHide={() => setShowGraph(false)}
-                      showGraph={showGraph}
-                      selectedNode={selectedNode}
-                    />
-                  )}
+                  </Box>
                 </Box>
-              </Box>
+              ) : (
+                <MultiGraphContainer selectedNode={selectedNode} handlers={handlers}/>
+              )}
             </>
           )}
         </ModalBody>
         <ModalFooter>
-        {handlers.find(handler => handler.name.toLowerCase() === "count") && (
-          <Button mr={3} colorScheme="purple" onClick={() => setShowGraph(true)}>
-            Show Throughput Graph
-          </Button>
-        )}
           <Button colorScheme="blue" onClick={handleClose}>Close</Button>
         </ModalFooter>
       </ModalContent>
