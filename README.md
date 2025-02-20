@@ -11,7 +11,7 @@ FastClick est nécessaire. Pour l'installer et le configurer correctement, consu
 Lors du développement, j'utilise la configuration suivante :
 
 ```sh
-./configure --enable-userlevel --disable-linuxmodule --enable-user-multithread --enable-statistic
+./configure --enable-userlevel --disable-linuxmodule --enable-user-multithread --enable-stats=2
 ```
 
 ### Lancement de **Click** avec HotSwapping

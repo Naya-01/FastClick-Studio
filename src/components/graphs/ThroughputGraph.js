@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Text, Button } from '@chakra-ui/react';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { WebsocketService } from '../services/webSocketService';
+import { Box, Text } from '@chakra-ui/react';
+import { WebsocketService } from '../../services/webSocketService';
+import GraphWithDate from './GraphWithDate';
 
-const ThroughputGraph = ({ onHide, showGraph, selectedNode }) => {
-
+const ThroughputGraph = ({ selectedNode }) => {
   const [throughputData, setThroughputData] = useState([]);
   const [cumulativeTotal, setCumulativeTotal] = useState(0);
 
@@ -39,9 +38,10 @@ const ThroughputGraph = ({ onHide, showGraph, selectedNode }) => {
           lastReadingRef.current = currentCount;
         }
         setCumulativeTotal(lastReadingRef.current - initialCountRef.current);
-        const elapsed = ((Date.now() - startTimeRef.current) / 1000).toFixed(1);
+        const now = new Date();
+        const formattedTime = now.toLocaleString();
         setThroughputData(prevData => {
-          const newPoint = { time: elapsed, count: throughput };
+          const newPoint = { time: formattedTime, count: throughput };
           const updatedData = [...prevData, newPoint];
           return updatedData.slice(-20);
         });
@@ -50,50 +50,47 @@ const ThroughputGraph = ({ onHide, showGraph, selectedNode }) => {
     });
   };
 
+  const computeDomain = () => {
+    if (throughputData.length === 0) return [0, 1];
+    const values = throughputData.map(d => d.count);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (min === Infinity || max === -Infinity || isNaN(min) || isNaN(max)) return [0, 1];
+    if (min === max) return [min - 1, max + 1];
+    const margin = (max - min) * 0.1;
+    return [min - margin, max + margin];
+  };
+
   useEffect(() => {
-    if (showGraph) {
-      lastReadingRef.current = null;
-      initialCountRef.current = null;
-      startTimeRef.current = Date.now();
-      setThroughputData([]);
-      setCumulativeTotal(0);
-      fetchThroughputGraph();
-      intervalRef.current = setInterval(fetchThroughputGraph, 5000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
+    lastReadingRef.current = null;
+    initialCountRef.current = null;
+    startTimeRef.current = Date.now();
+    setThroughputData([]);
+    setCumulativeTotal(0);
+    fetchThroughputGraph();
+    intervalRef.current = setInterval(fetchThroughputGraph, 5000);
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [showGraph, selectedNode]);
+  }, [selectedNode]);
 
   return (
-    <Box mt={5}>
-      <Text fontSize="lg" fontWeight="bold" mb={2}>
-        Throughput Graph (Time in seconde)
-      </Text>
-      <Text mb={2}>Total Packets: {cumulativeTotal}</Text>
-      <LineChart width={750} height={350} data={throughputData}>
-        <CartesianGrid stroke="#ccc" />
-        <XAxis
-          dataKey="time"
-          label={{ value: 'Time (s)', position: 'insideBottomRight', offset: -5 }}
-        />
-        <YAxis
-          label={{ value: 'Packets/s', angle: -90, position: 'insideLeft' }}
-        />
-        <Tooltip />
-        <Line type="monotone" dataKey="count" name="Throughput (packets/s)" stroke="#8884d8" />
-      </LineChart>
-      <Button mt={3} onClick={onHide}>
-        Hide Graph
-      </Button>
+    <Box>
+      <Text mt={3}>Total Packets: {cumulativeTotal}</Text>
+      <GraphWithDate
+        title="Throughput Graph (Date & Time)"
+        data={throughputData}
+        xDataKey="time"
+        xLabel="Date & Time"
+        yDataKey="count"
+        yLabel="Packets/s"
+        computeDomain={computeDomain}
+        lineName="Throughput (packets/s)"
+        stroke="#8884d8"
+      />
     </Box>
   );
 };
