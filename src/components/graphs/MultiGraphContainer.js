@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { Box, Button, Heading, Text } from '@chakra-ui/react';
 import ThroughputGraph from './ThroughputGraph';
+import CyclesGraph from './CyclesGraph';
 
 const GraphType = {
   THROUGHPUT: 'THROUGHPUT',
+  CYCLES: 'CYCLES',
 };
 
 const MultiGraphContainer = ({ selectedNode, handlers }) => {
   const [activeGraph, setActiveGraph] = useState(null);
 
+  const countHandler = handlers.find(handler => handler.name.toLowerCase() === "count");
+  const cyclesHandler = handlers.find(handler => handler.name.toLowerCase() === "cycles");
+
+
   return (
     <Box display="flex" height="75vh">
       <Box width="20%" maxHeight="100%" overflowY="auto" mr={5} flexShrink={0}>
-        {handlers.find(handler => handler.name.toLowerCase() === "count") && <Button 
+        {countHandler && <Button 
           colorScheme="blue" 
           width="100%" 
           mb={3}
@@ -20,8 +26,20 @@ const MultiGraphContainer = ({ selectedNode, handlers }) => {
             setActiveGraph(activeGraph === GraphType.THROUGHPUT ? null : GraphType.THROUGHPUT)
           }
         >
-          {activeGraph === GraphType.THROUGHPUT ? "Hide Throughput" : "Show Throughput with count handler"}
+          {activeGraph === GraphType.THROUGHPUT ? "Hide Throughput" : "Show Throughput Graph"}
         </Button>}
+        {cyclesHandler && (
+          <Button 
+            colorScheme="purple" 
+            width="100%" 
+            mb={3}
+            onClick={() =>
+              setActiveGraph(activeGraph === GraphType.CYCLES ? null : GraphType.CYCLES)
+            }
+          >
+            {activeGraph === GraphType.CYCLES ? "Hide Cycles" : "Show Cycles Graph"}
+          </Button>
+        )}
       </Box>
 
       <Box 
@@ -36,8 +54,12 @@ const MultiGraphContainer = ({ selectedNode, handlers }) => {
       >
         {activeGraph === GraphType.THROUGHPUT && (
           <Box>
-            <Heading size="md" mb={4}>Throughput Graph</Heading>
             <ThroughputGraph selectedNode={selectedNode} />
+          </Box>
+        )}
+        {activeGraph === GraphType.CYCLES && (
+          <Box>
+            <CyclesGraph selectedNode={selectedNode} />
           </Box>
         )}
         {!activeGraph && (
