@@ -1,6 +1,6 @@
-import React from 'react';
-import { Box, Text } from '@chakra-ui/react';
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, Button, Flex } from '@chakra-ui/react';
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Brush } from 'recharts';
 
 const GraphWithDate = ({
   title,
@@ -13,14 +13,29 @@ const GraphWithDate = ({
   lineName,
   stroke,
   chartWidth = 1000,
-  chartHeight = 650,
-  margin = { top: 20, right: 30, bottom: 150, left: 100 }
+  chartHeight = 505 ,
+  margin = { top: 20, right: 150, left: 100 },
+  maxTicks = 10
 }) => {
 
   const rawDomain = computeDomain();
   const fixedDomain = [Math.max(0, rawDomain[0]), rawDomain[1]];
-  const limit = 10;
-  const tickInterval = data.length > limit ? Math.floor(data.length / limit ) : 0;
+  const tickInterval = data.length > maxTicks ? Math.floor(data.length / maxTicks) : 0;
+
+  const [brushRange, setBrushRange] = useState({ startIndex: 0, endIndex: data.length - 1 });
+
+  useEffect(() => {
+    setBrushRange(prevRange => {
+      if (prevRange.startIndex === 0 && prevRange.endIndex === data.length - 2) {
+        return { startIndex: 0, endIndex: data.length - 1 };
+      }
+      return prevRange;
+    });
+  }, [data.length]);
+
+  const handleReset = () => {
+    setBrushRange({ startIndex: 0, endIndex: data.length - 1 });
+  };
 
   return (
     <Box mt={5}>
@@ -48,7 +63,7 @@ const GraphWithDate = ({
           label={{
             value: xLabel,
             position: 'insideBottom',
-            dy: 25,
+            dy: 0,
           }}
         />
         <YAxis
@@ -74,7 +89,21 @@ const GraphWithDate = ({
           baseValue={fixedDomain[0]}
           dot={{ r: 4 }}
         />
+        <Brush
+          dataKey={xDataKey}
+          height={30}
+          stroke={stroke}
+          travellerWidth={5}
+          startIndex={brushRange.startIndex}
+          endIndex={brushRange.endIndex}
+          onChange={(newRange) => setBrushRange(newRange)}
+        />
       </AreaChart>
+      <Flex justify="normal" mt={2} mr={margin.right / 2}>
+          <Button size="sm" colorScheme="blue" onClick={handleReset}>
+            Reset range
+          </Button>
+        </Flex>
     </Box>
   );
 };
