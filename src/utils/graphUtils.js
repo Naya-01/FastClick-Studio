@@ -1,6 +1,6 @@
 import { getLayoutedElements } from './layoutUtils';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
-import { getColor, getLiveBorderColor, getLiveColor } from '../utils/colors';
+import { getColor, getLiveBorderColor, getLiveColor, getEdgeColor } from '../utils/colors';
 
 export const calculateNodeWidth = (label, inputs, outputs) => {
   const baseWidth = 100;
@@ -81,7 +81,7 @@ export const handleData = (pairs, router) => {
       const outputHandleIndex = getOutputHandleIndex(pair.source);
       const inputHandleIndex = getInputHandleIndex(pair.destination);
 
-      const edgeColor = getColor(outputHandleIndex, inputHandleIndex);
+      const edgeColor = getEdgeColor();
 
       return {
         id: `e${pair.source}-${pair.destination}-${index}`,
@@ -92,7 +92,6 @@ export const handleData = (pairs, router) => {
         type: ConnectionLineType.SmoothStep,
         animated: true,
         markerEnd: {
-          type: MarkerType.ArrowClosed,
           color: edgeColor,
         },
         style: { 

@@ -1,7 +1,6 @@
-
-import React, { useEffect, useMemo } from 'react';
-import { getSmoothStepPath } from '@xyflow/react';
-import { Box } from '@chakra-ui/react';
+import React, { memo } from 'react';
+import { getBezierPath, BaseEdge, EdgeLabelRenderer} from '@xyflow/react';
+import { Box, Button } from '@chakra-ui/react';
 
 const ProposalEdge = ({
   id,
@@ -15,7 +14,7 @@ const ProposalEdge = ({
   data,
   style,
 }) => {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     targetX,
@@ -31,37 +30,25 @@ const ProposalEdge = ({
   };
 
   return (
-    <g>
-      <path
-        id={id}
-        d={edgePath}
-        markerEnd={markerEnd}
-        className="react-flow__edge-path"
-        style={style}
-      />
-      {data?.showAdd && data?.onAddCounter && (
-        <foreignObject x={labelX - 15} y={labelY - 15} width="30" height="30">
-          <Box
-            as="button"
-            width="30px"
-            height="27px"
-            borderRadius="full"
-            bg="#ff0066"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            color="white"
-            fontWeight="bold"
-            onClick={handleClick}
-            _hover={{ bg: "#e6005c" }}
-            style={{ border: 'none', cursor: 'pointer' }}
-          >
+    <>
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      {data?.showAdd && data?.onAddCounter &&
+      <EdgeLabelRenderer>
+        <Box
+          position="absolute"
+          style={{
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            pointerEvents: 'auto',
+          }}
+          zIndex={2000}
+        >
+          <Button onClick={handleClick} size="sm" colorScheme="red">
             +
-          </Box>
-        </foreignObject>
-      )}
-    </g>
+          </Button>
+        </Box>
+      </EdgeLabelRenderer>}
+    </>
   );
 };
 
-export default React.memo(ProposalEdge);
+export default memo(ProposalEdge);
