@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { addEdge } from '@xyflow/react';
-import { getColor, getEdgeColor } from '../utils/colors';
-import { ConnectionLineType, MarkerType } from '@xyflow/react';
+import { getEdgeColor } from '../utils/colors';
+import { ConnectionLineType } from '@xyflow/react';
 
 export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternals) => {
   const updateNodeHandles = useCallback((nodeId, newInputs, newOutputs) => {
@@ -44,9 +44,6 @@ export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternal
       id: `e${connection.source}-${connection.target}-${Date.now()}`,
       type: ConnectionLineType.SmoothStep,
       animated: false,
-      markerEnd: {
-        color: edgeColor,
-      },
       style: {
         stroke: edgeColor,
         strokeWidth: 2,

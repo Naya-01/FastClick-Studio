@@ -10,7 +10,6 @@ const ProposalEdge = ({
   targetY,
   sourcePosition,
   targetPosition,
-  markerEnd,
   data,
   style,
 }) => {
@@ -31,8 +30,8 @@ const ProposalEdge = ({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      {data?.showAdd && data?.onAddCounter &&
+      <BaseEdge path={edgePath} style={style} />
+      {data?.onAddCounter &&
       <EdgeLabelRenderer>
         <Box
           position="absolute"

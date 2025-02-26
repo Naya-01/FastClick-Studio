@@ -13,6 +13,7 @@ import {
   FormLabel,
   FormErrorMessage,
 } from '@chakra-ui/react';
+import { useClasses } from '../context/ClassesContext';
 
 const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false, router }) => {
 
@@ -27,6 +28,7 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
   const [nodeData, setNodeData] = useState(initialNodeData || defaultNode);
   const [errors, setErrors] = useState({ id: '', type: '' });
 
+  const { classesData, loading } = useClasses();
 
   const renderField = (fieldName, label) => {
     const fieldValue = nodeData[fieldName];
@@ -155,6 +157,7 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
             <Input
               placeholder="Node Class"
               value={nodeData.type}
+              list="classes-suggestions"
               onChange={(e) => {
                 setNodeData({ ...nodeData, type: e.target.value });
                 if (e.target.value.trim() !== '') {
@@ -162,6 +165,12 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
                 }
               }}
             />
+            <datalist id="classes-suggestions">
+              {classesData &&
+                classesData.map((className) => (
+                  <option key={className} value={className} />
+                ))}
+            </datalist>
             {errors.type && <FormErrorMessage>{errors.type}</FormErrorMessage>}
           </FormControl>
 
@@ -190,7 +199,7 @@ const NodeModal = ({ isOpen, onClose, onConfirm, initialNodeData, isEdit = false
         </ModalBody>
         <ModalFooter>
           <Button colorScheme="blue" onClick={handleConfirm}>
-            {isEdit ? "Save Changes" : "Add Node"}
+            {isEdit ? "Save Changes (locally)" : "Add Node"}
           </Button>
         </ModalFooter>
       </ModalContent>
