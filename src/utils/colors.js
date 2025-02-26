@@ -29,3 +29,7 @@ export const getAddColor = () => {
 export const getAddBorderColor = () => {
     return '#28a745';
   }
+
+export const getEdgeColor = () => {
+    return '#004085';
+  }

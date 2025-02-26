@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { addEdge } from '@xyflow/react';
-import { getColor } from '../utils/colors';
+import { getColor, getEdgeColor } from '../utils/colors';
 import { ConnectionLineType, MarkerType } from '@xyflow/react';
 
 export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternals) => {
@@ -37,7 +37,7 @@ export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternal
       console.warn('Handle index out of range');
       return;
     }
-    const edgeColor = getColor(sourceHandleIndex, targetHandleIndex);
+    const edgeColor = getEdgeColor();
 
     const newEdge = {
       ...connection,
@@ -45,7 +45,6 @@ export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternal
       type: ConnectionLineType.SmoothStep,
       animated: false,
       markerEnd: {
-        type: MarkerType.ArrowClosed,
         color: edgeColor,
       },
       style: {

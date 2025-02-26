@@ -2,47 +2,57 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
 
-    const proxyConfig = {
-        target: process.env.REACT_APP_API_URL,
-        changeOrigin: true,
-      };
   app.use(
     '/flatconfig',
     createProxyMiddleware({
-      target: `${process.env.REACT_APP_API_URL}/flatconfig`,
       changeOrigin: true,
+      router: (req) => {
+        const base = req.headers['x-api-target'];
+        return `${base}/flatconfig`;
+      }
     })
   );
 
   app.use(
     '/clickconfig',
     createProxyMiddleware({
-      target: `${process.env.REACT_APP_API_URL}/clickconfig`,
       changeOrigin: true,
+      router: (req) => {
+        const base = req.headers['x-api-target'];
+        return `${base}/clickconfig`;
+      }
     })
   );
 
   app.use(
     '/command',
     createProxyMiddleware({
-      target: `${process.env.REACT_APP_API_URL}/command`,
       changeOrigin: true,
+      router: (req) => {
+        const base = req.headers['x-api-target'];
+        return `${base}/command`;
+      }
     })
   );
 
   app.use(
     '/handlers',
     createProxyMiddleware({
-      target: `${process.env.REACT_APP_API_URL}/handlers`,
       changeOrigin: true,
+      router: (req) => {
+        const base = req.headers['x-api-target'];
+        return `${base}/handlers`;
+      }
     })
   );
 
   app.use(
     '/fastclick',
     createProxyMiddleware({
-      target: process.env.REACT_APP_API_URL,
       changeOrigin: true,
+      router: (req) => {
+        return req.headers['x-api-target'];
+      },
       pathRewrite: {
         '^/fastclick': '',
       },
