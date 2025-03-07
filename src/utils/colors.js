@@ -33,3 +33,17 @@ export const getAddBorderColor = () => {
 export const getEdgeColor = () => {
     return '#004085';
   }
+
+export const getNodeColorByCount = (count) => {
+  if (count < 1000) {
+    // Blue
+    return { background: '#cce5ff', border: '#004085' };
+  } else if (count < 5000) {
+    // Yellow
+    return { background: '#ffe799', border: '#ffcf33' };
+  } else {
+    // Red
+    return { background: '#e77e88', border: '#ff3300' };
+  }
+};
+  

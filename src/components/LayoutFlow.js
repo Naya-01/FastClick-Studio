@@ -31,10 +31,17 @@ import { useClickConfig } from '../hooks/useClickConfig';
 import { GraphControls } from './GraphControls';
 import DragPanel from './DragPanel';
 import { useAlert } from '../context/AlertContext';
-import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
+import {
+  getLiveColor,
+  getAddColor,
+  getLiveBorderColor,
+  getAddBorderColor,
+  getNodeColorByCount
+} from '../utils/colors';
 import ProposalEdge from './ProposalEdge';
 import {getLayoutedElements} from '../utils/layoutUtils';
 import { useClasses } from '../context/ClassesContext';
+import { lastValueFrom } from 'rxjs';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -62,7 +69,8 @@ const LayoutFlow = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const { screenToFlowPosition, setCenter } = useReactFlow();
-  const nodesRef = useRef([]);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
   const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
   const [pendingEdgeId, setPendingEdgeId] = useState(null);
   const [newElementName, setNewElementName] = useState('');
@@ -83,6 +91,86 @@ const LayoutFlow = () => {
   );
 
   const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigUpdated);
+
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+
+  const applyColorsToGraph = useCallback(
+    async (nodesList, edgesList, routerInstance) => {
+      const nodesWithCount = nodesList.filter((node) => {
+        const element = routerInstance.getElement(node.id);
+        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'count');
+      });
+      if (nodesWithCount.length === 0) {
+        return { updatedNodes: nodesList, updatedEdges: edgesList };
+      }
+      try {
+        const results = await Promise.all(
+          nodesWithCount.map((node) =>
+            lastValueFrom(webSocketService.getHandlers(node.id, 'count'))
+          )
+        );
+        const updatedNodes = nodesList.map((node) => {
+          const element = routerInstance.getElement(node.id);
+          if (
+            element &&
+            element.handlers &&
+            element.handlers.some((h) => h.name.toLowerCase() === 'count')
+          ) {
+            const idx = nodesWithCount.findIndex((n) => n.id === node.id);
+            if (idx !== -1) {
+              const newCount = Number(results[idx]);
+              element.count = newCount;
+              const { background, border } = getNodeColorByCount(newCount);
+              return {
+                ...node,
+                style: {
+                  ...node.style,
+                  backgroundColor: background,
+                  border: `1px solid ${border}`,
+                },
+              };
+            }
+          }
+          return node;
+        });
+        const updatedEdges = edgesList.map((edge) => {
+          const targetNode = updatedNodes.find((node) => node.id === edge.target);
+          if (targetNode && targetNode.style && targetNode.style.border) {
+            return {
+              ...edge,
+              style: {
+                ...edge.style,
+                stroke: targetNode.style.border.replace('1px solid ', ''),
+                strokeWidth: 2,
+              },
+            };
+          }
+          return edge;
+        });
+        return { updatedNodes, updatedEdges };
+      } catch (err) {
+        return { updatedNodes: nodesList, updatedEdges: edgesList };
+      }
+    },
+    [webSocketService]
+  );
+
+  const updateColors = useCallback(() => {
+    if (!router || nodesRef.current.length === 0) return;
+    applyColorsToGraph(nodesRef.current, edgesRef.current, router)
+      .then(({ updatedNodes, updatedEdges }) => {
+        setNodes(updatedNodes);
+        setEdges(updatedEdges);
+      })
+      .catch((err) => console.error(err));
+  }, [router, applyColorsToGraph]);
 
   const fetchData = async () => {
       const subscription = webSocketService.getFlatConfig().subscribe({
@@ -105,6 +193,14 @@ const LayoutFlow = () => {
           
             setNodes(layoutedNodes);
             setEdges(edgesWithProposal);
+
+            applyColorsToGraph(layoutedNodes, edgesWithProposal, routerTreeModel)
+            .then(({ updatedNodes, updatedEdges }) => {
+              setNodes(updatedNodes);
+              setEdges(updatedEdges);
+            })
+            .catch((err) => console.error(err));
+
           });
         },
         error: (error) => {
@@ -137,6 +233,14 @@ const LayoutFlow = () => {
       setConnectionError(false);
     }
   }, [connectionError, navigate, showAlert]);
+
+  useEffect(() => {
+    if (!router) return;
+    const intervalId = setInterval(() => {
+      updateColors();
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, [router, updateColors]);
 
   const openModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
