@@ -14,8 +14,6 @@ import {
 import '@xyflow/react/dist/style.css';
 import { 
   Box,
-  Button,
-  Input
 } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
@@ -42,6 +40,7 @@ import ProposalEdge from './ProposalEdge';
 import {getLayoutedElements} from '../utils/layoutUtils';
 import { useClasses } from '../context/ClassesContext';
 import { lastValueFrom } from 'rxjs';
+import AddElementModal from './AddElementModal'
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -358,6 +357,9 @@ const LayoutFlow = () => {
     });
     setIsAddElementModalOpen(false);
     setPendingEdgeId(null);
+    setTimeout(() => {
+      handleReorganizeNodes();
+    }, 50);
   };
 
   const handleAddNode = (newNode, forcedPosition = null) => {
@@ -523,7 +525,7 @@ const LayoutFlow = () => {
       ...node,
       position: { x: 0, y: 0 },
     }));
-    const layout = await getLayoutedElements(resetNodes, edges);
+    const layout = await getLayoutedElements(resetNodes, edgesRef.current);
     setNodes(layout.nodes);
     setEdges(layout.edges);
   };
@@ -609,44 +611,14 @@ const LayoutFlow = () => {
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} router={router}/>
 
-      {isAddElementModalOpen && (
-        <Box
-          position="fixed"
-          top="50%"
-          left="50%"
-          transform="translate(-50%, -50%)"
-          bg="white"
-          p={4}
-          boxShadow="lg"
-          zIndex={1000}
-          borderRadius="md"
-          maxW="300px"
-        >
-          <Box mb={3}>
-            <Input
-              placeholder="Entrez le nom de l'élément"
-              value={newElementName}
-              onChange={(e) => setNewElementName(e.target.value)}
-              isRequired
-              list="classes-suggestions"
-            />
-            <datalist id="classes-suggestions">
-              {classesData &&
-                classesData.map((className) => (
-                  <option key={className} value={className} />
-                ))}
-            </datalist>
-          </Box>
-          <Box display="flex" justifyContent="flex-end">
-            <Button mr={2} onClick={handleAddElementCancel}>
-              Annuler
-            </Button>
-            <Button colorScheme="blue" onClick={handleAddElementConfirm}>
-              Confirmer
-            </Button>
-          </Box>
-        </Box>
-      )}
+      <AddElementModal
+        isOpen={isAddElementModalOpen}
+        onCancel={handleAddElementCancel}
+        onConfirm={handleAddElementConfirm}
+        newElementName={newElementName}
+        setNewElementName={setNewElementName}
+        classesData={classesData}
+      />
     </>
   );
 };
