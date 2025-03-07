@@ -5,21 +5,24 @@ import LayoutFlow from './components/LayoutFlow';
 import { ReactFlowProvider } from '@xyflow/react';
 import { AlertProvider } from './context/AlertContext';
 import { ChakraProvider } from '@chakra-ui/react';
+import { ClassesProvider } from './context/ClassesContext';
 
 function App() {
   return (
     <ChakraProvider> 
       <Router>
         <AlertProvider>
-          <div className="App">
-            <ReactFlowProvider>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/config" element={<LayoutFlow />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </ReactFlowProvider>
-          </div>
+          <ClassesProvider>
+            <div className="App">
+              <ReactFlowProvider>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/config" element={<LayoutFlow />} />
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </ReactFlowProvider>
+            </div>
+          </ClassesProvider>
         </AlertProvider>
       </Router>
     </ChakraProvider>

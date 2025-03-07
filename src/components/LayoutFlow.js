@@ -14,6 +14,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import { 
   Box,
+  Button,
+  Input
 } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from './NodeListSidebar';
@@ -32,6 +34,7 @@ import { useAlert } from '../context/AlertContext';
 import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
 import ProposalEdge from './ProposalEdge';
 import {getLayoutedElements} from '../utils/layoutUtils';
+import { useClasses } from '../context/ClassesContext';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -60,6 +63,11 @@ const LayoutFlow = () => {
   const { showAlert } = useAlert();
   const { screenToFlowPosition, setCenter } = useReactFlow();
   const nodesRef = useRef([]);
+  const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
+  const [pendingEdgeId, setPendingEdgeId] = useState(null);
+  const [newElementName, setNewElementName] = useState('');
+
+  const { classesData } = useClasses();
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -86,16 +94,11 @@ const LayoutFlow = () => {
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
             const edgesWithProposal = layoutedEdges.map((edge) => {
-              const sourceNodeId = edge.source;
-              const routerElement = routerTreeModel.getElement(sourceNodeId);
-              const hasCount = routerElement?.handlers.find(handler => handler.name.toLowerCase() === "count") ?? false;
-          
               return {
                 ...edge,
                 type: 'proposalEdge',
                 data: {
-                  showAdd: !hasCount,
-                  onAddCounter: handleAddCounter,
+                  onAddCounter: handleAddElement,
                 },
               };
             });
@@ -166,9 +169,22 @@ const LayoutFlow = () => {
     }
   };
 
-  const handleAddCounter = useCallback((edgeId) => {
+
+  const handleAddElementCancel = () => {
+    setIsAddElementModalOpen(false);
+    setPendingEdgeId(null);
+  };
+
+  const handleAddElement = useCallback((edgeId) => {
+    setPendingEdgeId(edgeId);
+    setNewElementName('');
+    setIsAddElementModalOpen(true);
+  }, []);
+
+  const handleAddElementConfirm = () => {
+    console.log("Adding element", newElementName);
     setEdges((prevEdges) => {
-      const edgeToReplace = prevEdges.find((e) => e.id === edgeId);
+      const edgeToReplace = prevEdges.find((e) => e.id === pendingEdgeId);
       if (!edgeToReplace) return prevEdges;
   
       const {
@@ -176,7 +192,6 @@ const LayoutFlow = () => {
         target,
         sourceHandle,
         targetHandle,
-        markerEnd,
         style,
         type,
         animated,
@@ -193,10 +208,10 @@ const LayoutFlow = () => {
       const midX = (sourceNode.position.x + targetNode.position.x) / 2;
       const midY = (sourceNode.position.y + targetNode.position.y) / 2;
   
-      const newNodeId = `counter_${source}_${target}`;
+      const newNodeId = `${newElementName}_${source}_${target}`;
       const newNode = {
         id: newNodeId,
-        type: 'Counter',
+        type: `${newElementName}`,
         inputs: 1,
         outputs: 1,
         configuration: '',
@@ -204,7 +219,7 @@ const LayoutFlow = () => {
   
       handleAddNode(newNode, { x: midX, y: midY });
   
-      const updatedEdges = prevEdges.filter((e) => e.id !== edgeId);
+      const updatedEdges = prevEdges.filter((e) => e.id !== pendingEdgeId);
   
       const edge1Id = `e${source}-${newNodeId}-${Date.now()}-1`;
       const newEdge1 = {
@@ -214,7 +229,6 @@ const LayoutFlow = () => {
         target: newNodeId,
         sourceHandle,
         targetHandle: 'input-handle-0',
-        markerEnd: markerEnd,
         style: style,
         type: type,
         animated: animated,
@@ -229,7 +243,6 @@ const LayoutFlow = () => {
         target,
         sourceHandle: 'output-handle-0',
         targetHandle,
-        markerEnd: markerEnd,
         style: style,
         type: type,
         animated: animated,
@@ -239,7 +252,9 @@ const LayoutFlow = () => {
       updatedEdges.push(newEdge1, newEdge2);
       return updatedEdges;
     });
-  }, [nodesRef, setEdges]);
+    setIsAddElementModalOpen(false);
+    setPendingEdgeId(null);
+  };
 
   const handleAddNode = (newNode, forcedPosition = null) => {
     const newNodeWidth = calculateNodeWidth(newNode.id, newNode.inputs, newNode.outputs);
@@ -489,6 +504,45 @@ const LayoutFlow = () => {
       />
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} router={router}/>
+
+      {isAddElementModalOpen && (
+        <Box
+          position="fixed"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          bg="white"
+          p={4}
+          boxShadow="lg"
+          zIndex={1000}
+          borderRadius="md"
+          maxW="300px"
+        >
+          <Box mb={3}>
+            <Input
+              placeholder="Entrez le nom de l'élément"
+              value={newElementName}
+              onChange={(e) => setNewElementName(e.target.value)}
+              isRequired
+              list="classes-suggestions"
+            />
+            <datalist id="classes-suggestions">
+              {classesData &&
+                classesData.map((className) => (
+                  <option key={className} value={className} />
+                ))}
+            </datalist>
+          </Box>
+          <Box display="flex" justifyContent="flex-end">
+            <Button mr={2} onClick={handleAddElementCancel}>
+              Annuler
+            </Button>
+            <Button colorScheme="blue" onClick={handleAddElementConfirm}>
+              Confirmer
+            </Button>
+          </Box>
+        </Box>
+      )}
     </>
   );
 };

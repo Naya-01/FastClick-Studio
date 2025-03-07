@@ -65,6 +65,7 @@ const DragPanel = () => {
       bottom="0"
       zIndex={10}
     >
+      <Text fontSize={13} mb={2}>By default elementmap.xml is located at '/usr/local/share/click/elementmap.xml'</Text>
       <Input type="file" accept=".xml" onChange={handleFileUpload} mb={3} />
       <Input
         placeholder="Search elements..."
