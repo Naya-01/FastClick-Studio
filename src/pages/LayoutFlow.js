@@ -16,18 +16,18 @@ import {
   Box,
 } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
-import NodeListSidebar from './NodeListSidebar';
-import NodeDetailsModal from './NodeDetailsModal';
-import DynamicHandlesNode from './DynamicHandlesNode';
+import NodeListSidebar from '../components/NodeListSidebar';
+import NodeDetailsModal from '../components/NodeDetailsModal';
+import DynamicHandlesNode from '../components/DynamicHandlesNode';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
-import ContextMenu from './ContextMenu';
-import NodeModal from './NodeModal';
+import ContextMenu from '../components/ContextMenu';
+import NodeModal from '../components/NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
-import { GraphControls } from './GraphControls';
-import DragPanel from './DragPanel';
+import { GraphControls } from '../components/GraphControls';
+import DragPanel from '../components/DragPanel';
 import { useAlert } from '../context/AlertContext';
 import {
   getLiveColor,
@@ -36,11 +36,11 @@ import {
   getAddBorderColor,
   getNodeColorByCount
 } from '../utils/colors';
-import ProposalEdge from './ProposalEdge';
+import ProposalEdge from '../components/ProposalEdge';
 import {getLayoutedElements} from '../utils/layoutUtils';
 import { useClasses } from '../context/ClassesContext';
 import { lastValueFrom } from 'rxjs';
-import AddElementModal from './AddElementModal'
+import AddElementModal from '../components/AddElementModal'
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -530,16 +530,16 @@ const LayoutFlow = () => {
     setEdges(layout.edges);
   };
 
-  const handleTargetNode = useCallback((id) => {
-    const node = nodes.find(n => n.id === id);
+  const handleTargetNode = useCallback((nodeId) => {
+    const node = nodesRef.current.find(n => n.id === nodeId);
     if (node && node.position && node.style) {
       const nodeWidth = parseFloat(node.style.width) || 0;
-      const node_height = parseFloat(node.style.height) || 0;
+      const nodeHeight = parseFloat(node.style.height) || 0;
       const centerX = node.position.x + nodeWidth / 2;
-      const centerY = node.position.y + node_height / 2;
+      const centerY = node.position.y + nodeHeight / 2;
       setCenter(centerX, centerY, { duration: 500 });
     }
-  }, [nodes, setCenter]);
+  }, [setCenter]);
   
   return (
     <>

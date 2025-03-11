@@ -1,7 +1,7 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import HomePage from './components/HomePage';
-import LayoutFlow from './components/LayoutFlow';
+import HomePage from './pages/HomePage';
+import LayoutFlow from './pages/LayoutFlow';
 import { ReactFlowProvider } from '@xyflow/react';
 import { AlertProvider } from './context/AlertContext';
 import { ChakraProvider } from '@chakra-ui/react';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Text, Button, Flex } from '@chakra-ui/react';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Brush } from 'recharts';
 
@@ -13,14 +13,13 @@ const GraphWithDate = ({
   lineName,
   stroke,
   chartWidth = 1000,
-  chartHeight = 505 ,
+  chartHeight = 505,
   margin = { top: 20, right: 150, left: 100 },
   maxTicks = 10
 }) => {
-
-  const rawDomain = computeDomain();
-  const fixedDomain = [Math.max(0, rawDomain[0]), rawDomain[1]];
-  const tickInterval = data.length > maxTicks ? Math.floor(data.length / maxTicks) : 0;
+  const rawDomain = useMemo(() => computeDomain(), [computeDomain, data]);
+  const fixedDomain = useMemo(() => [Math.max(0, rawDomain[0]), rawDomain[1]], [rawDomain]);
+  const tickInterval = useMemo(() => data.length > maxTicks ? Math.floor(data.length / maxTicks) : 0, [data.length, maxTicks]);
 
   const [brushRange, setBrushRange] = useState({ startIndex: 0, endIndex: data.length - 1 });
 
@@ -108,4 +107,4 @@ const GraphWithDate = ({
   );
 };
 
-export default GraphWithDate;
+export default React.memo(GraphWithDate);
