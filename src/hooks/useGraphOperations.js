@@ -2,9 +2,11 @@ import { useCallback } from 'react';
 import { addEdge } from '@xyflow/react';
 import { getEdgeColor } from '../utils/colors';
 import { ConnectionLineType } from '@xyflow/react';
+import { calculateNodeWidth } from '../utils/graphUtils';
 
 export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternals) => {
   const updateNodeHandles = useCallback((nodeId, newInputs, newOutputs) => {
+    const newWidth = calculateNodeWidth(nodeId, newInputs, newOutputs);
     setNodes((currentNodes) =>
       currentNodes.map((node) => {
         if (node.id === nodeId) {
@@ -14,6 +16,10 @@ export const useGraphOperations = (nodes, setNodes, setEdges, updateNodeInternal
               ...node.data,
               inputs: newInputs,
               outputs: newOutputs,
+            },
+            style: {
+              ...node.style,
+              width: newWidth,
             },
           };
         }
