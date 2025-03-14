@@ -40,8 +40,9 @@ const ThroughputGraph = ({ selectedNode }) => {
         setCumulativeTotal(lastReadingRef.current - initialCountRef.current);
         const now = new Date();
         const formattedTime = now.toLocaleString();
+        const elapsed = Math.floor((now - startTimeRef.current) / 1000);
         setThroughputData(prevData => {
-          const newPoint = { time: formattedTime, count: throughput };
+          const newPoint = { time: elapsed, count: throughput };
           const updatedData = [...prevData, newPoint];
           return updatedData.slice(-20);
         });
@@ -81,15 +82,16 @@ const ThroughputGraph = ({ selectedNode }) => {
     <Box>
       <Text mt={3}>Total Packets: {cumulativeTotal}</Text>
       <GraphWithDate
-        title="Throughput Graph (Date & Time)"
+        title="Throughput Graph (Seconds)"
         data={throughputData}
         xDataKey="time"
-        xLabel="Date & Time"
+        xLabel="Time (s)"
         yDataKey="count"
         yLabel="Packets/s"
         computeDomain={computeDomain}
         lineName="Throughput (packets/s)"
         stroke="#8884d8"
+        turnAngle={false}
       />
     </Box>
   );

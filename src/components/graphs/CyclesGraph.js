@@ -26,12 +26,13 @@ const CyclesGraph = ({ selectedNode }) => {
 
         const cyclesPerTask = cycles / calls;
         const now = new Date();
-        const formattedTime = now.toLocaleString();
+
+        const elapsed = Math.floor((now - startTimeRef.current) / 1000);
 
         setData({ calls, cycles });
 
         setGraphData(prevData => {
-          const newPoint = { time: formattedTime, cyclesPerTask, types };
+          const newPoint = { time: elapsed, cyclesPerTask, types };
           const updatedData = [...prevData, newPoint];
           return updatedData.slice(-20);
         });
@@ -65,15 +66,16 @@ const CyclesGraph = ({ selectedNode }) => {
         Total {lastType} calls: {data.calls} & cycles: {data.cycles}
       </Text>
       <GraphWithDate 
-        title={`Cycles per ${lastType} Graph (Date & Time)`}
+        title={`Cycles per ${lastType} Graph (Seconds)`}
         data={graphData}
         xDataKey="time"
-        xLabel="Date & Time"
+        xLabel="Time (s)"
         yDataKey="cyclesPerTask"
         yLabel={`Cycles/${lastType}`}
         computeDomain={domain}
         lineName={`Cycles per ${lastType}`}
         stroke="#8884d8"
+        turnAngle={false}
       />
     </Box>
   );

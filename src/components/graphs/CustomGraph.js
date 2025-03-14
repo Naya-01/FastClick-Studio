@@ -32,6 +32,8 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
   const lastRawValueRef = useRef(null);
   const initialRawValueRef = useRef(null);
   const intervalRef = useRef(null);
+  const startTimeRef = useRef(null);
+  
   const websocketService = new WebsocketService();
 
   useEffect(() => {
@@ -86,6 +88,7 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
   };
 
   const startGraph = () => {
+    startTimeRef.current = Date.now();
     lastRawValueRef.current = null;
     initialRawValueRef.current = null;
     setDataPoints([]);
@@ -148,7 +151,8 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
 
         const now = new Date();
         const formattedTime = now.toLocaleString();
-        setDataPoints(prev => [...prev, { time: formattedTime, value: computedValue }].slice(-20));
+        const elapsed = Math.floor((now - startTimeRef.current) / 1000);
+        setDataPoints(prev => [...prev, { time: elapsed, value: computedValue }].slice(-20));
       },
       error: (err) => console.error("Data fetch error :", err)
     });
@@ -257,12 +261,13 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
           title={title}
           data={dataPoints}
           xDataKey="time"
-          xLabel="Date & Time"
+          xLabel="Time (s)"
           yDataKey="value"
           yLabel={yAxisLabel}
           computeDomain={domain}
           lineName={title}
           stroke="#8884d8"
+          turnAngle={false}
         />
         <Box
           mb={4}

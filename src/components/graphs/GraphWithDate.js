@@ -15,7 +15,8 @@ const GraphWithDate = ({
   chartWidth = 1000,
   chartHeight = 505,
   margin = { top: 20, right: 150, left: 100 },
-  maxTicks = 10
+  maxTicks = 10,
+  turnAngle = true,
 }) => {
   const rawDomain = useMemo(() => computeDomain(), [computeDomain, data]);
   const fixedDomain = useMemo(() => [Math.max(0, rawDomain[0]), rawDomain[1]], [rawDomain]);
@@ -52,18 +53,18 @@ const GraphWithDate = ({
           dataKey={xDataKey}
           interval={tickInterval}
           padding={ data.length === 1 ? { left: 0, right: chartWidth * 0.69 } : {} }  //to force to be displayed on the left when 1 element
-          tick={{
+          tick={turnAngle ? {             
             angle: -90,
             textAnchor: 'start',
             fontSize: 12,
-            dy: 110,
+            dy: 110,  
             dx: -10,
-          }}
+           }: undefined}
           height={150}
           label={{
             value: xLabel,
             position: 'insideBottom',
-            dy: 0,
+            dy: turnAngle ? 0 : -70,
           }}
         />
         <YAxis

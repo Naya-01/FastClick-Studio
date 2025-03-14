@@ -14,6 +14,12 @@ export const computeDomain = (datas, field) => {
   const values = datas.map(d => d[field]);
   const min = Math.min(...values);
   const max = Math.max(...values);
+
+  if (min === max) {
+    const delta = min > 0 ? min * 0.1 : 1;
+    return [min, min + delta];
+  }
+
   if (min === Infinity || max === -Infinity || isNaN(min) || isNaN(max)) return [0, 1];
   const margin = (max - min) * 0.1;
   return [Math.max(0, min - margin), max + margin];
