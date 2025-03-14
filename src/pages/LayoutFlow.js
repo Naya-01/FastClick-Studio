@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { toSvg } from 'html-to-image';
 import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
@@ -24,7 +23,6 @@ import NodeDetailsModal from '../components/NodeDetailsModal';
 import DynamicHandlesNode from '../components/DynamicHandlesNode';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
-import { lespairs } from '../data/pairs';
 import ContextMenu from '../components/ContextMenu';
 import NodeModal from '../components/NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
@@ -45,6 +43,7 @@ import { useClasses } from '../context/ClassesContext';
 import { lastValueFrom } from 'rxjs';
 import AddElementModal from '../components/AddElementModal'
 import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
+import { useDownloadImage } from '../hooks/useDownloadImage';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -295,27 +294,6 @@ const LayoutFlow = () => {
     setIsModalOpen(false);
     setSelectedNode(null);
   };
-
-  const handleDownloadImage = () => {
-    if (reactFlowWrapper.current) {
-      toSvg(reactFlowWrapper.current, {
-        filter: (node) => {
-          return !node.classList?.contains('react-flow__minimap');
-        },
-        backgroundColor: '#ffffff',
-      })
-        .then((dataUrl) => {
-          const link = document.createElement('a');
-          link.download = 'graph.svg';
-          link.href = dataUrl;
-          link.click();
-        })
-        .catch((error) => {
-          console.error("Could not download image", error);
-        });
-    }
-  };
-
 
   const handleAddElementCancel = () => {
     setIsAddElementModalOpen(false);
@@ -629,7 +607,7 @@ const LayoutFlow = () => {
         </Box>
 
         <GraphControls 
-          onDownloadImage={handleDownloadImage}
+          onDownloadImage={useDownloadImage(reactFlowWrapper)}
           onGenerateConfig={generateClickConfig}
           onReorganize={handleReorganizeNodes}
         />

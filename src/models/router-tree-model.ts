@@ -1,4 +1,3 @@
-import { lespairs } from "../data/pairs";
 import { Pair } from "./pair";
 import { WebsocketService } from '../services/webSocketService';
 import { lastValueFrom } from "rxjs";
