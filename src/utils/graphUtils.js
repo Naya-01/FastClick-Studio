@@ -3,6 +3,22 @@ import { ConnectionLineType } from '@xyflow/react';
 import { getLiveBorderColor, getLiveColor, getEdgeColor } from '../utils/colors';
 
 
+export const computeDomain = (datas, field) => {
+  if (datas.length === 0) return [0, 1];
+  
+  if (datas.length === 1) {
+    const value = datas[0][field];
+    const delta = value > 0 ? value * 0.1 : 1;
+    return [value, value + delta];
+  }
+  const values = datas.map(d => d[field]);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min === Infinity || max === -Infinity || isNaN(min) || isNaN(max)) return [0, 1];
+  const margin = (max - min) * 0.1;
+  return [Math.max(0, min - margin), max + margin];
+};
+
 export const getAdjustedCoordinates = (event, wrapperRef) => {
   const wrapperBounds = wrapperRef.current.getBoundingClientRect();
   const transform = wrapperRef.current.querySelector('.react-flow__viewport').style.transform;

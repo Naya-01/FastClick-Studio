@@ -10,9 +10,11 @@ import {
   VStack,
   HStack,
   Text,
+  Flex
 } from '@chakra-ui/react';
 import { WebsocketService } from '../../services/webSocketService';
 import GraphWithDate from './GraphWithDate';
+import { computeDomain } from '../../utils/graphUtils';
 
 const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }) => {
   const [configComplete, setConfigComplete] = useState(false);
@@ -25,6 +27,7 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
   const [dataPoints, setDataPoints] = useState([]);
   const [cumulativeTotal, setCumulativeTotal] = useState(0);
   const [yAxisLabel, setYAxisLabel] = useState("Value");
+  const [currentVariables, setCurrentVariables] = useState({});
   
   const lastRawValueRef = useRef(null);
   const initialRawValueRef = useRef(null);
@@ -118,6 +121,8 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
             mapObj[item.variableName] = tokens[item.index];
           }
         });
+
+        setCurrentVariables(mapObj);
 
         const rawValue = evaluateFormula(mapObj);
         let computedValue = rawValue;
@@ -237,33 +242,56 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
     );
   }
 
-  const computeDomain = () => {
-    if (dataPoints.length === 0) return [0, 1];
-    const values = dataPoints.map(d => d.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    if (min === Infinity || max === -Infinity || isNaN(min) || isNaN(max)) return [0, 1];
-    if (min === max) return [min - 1, max + 1];
-    const margin = (max - min) * 0.1;
-    return [min - margin, max + margin];
+  const domain = () => {
+    return computeDomain(dataPoints, 'value');
   };
+
+  const extractedVars = (formula.match(/\b[a-zA-Z_]\w*\b/g) || []).filter(v => v !== "return");
+  const displayedMapping = mapping.filter(item => extractedVars.includes(item.variableName));
+
 
   return (
     <Box p={4}>
-      {computeDifference && <Text mb={2}>Cumulative Total: {cumulativeTotal}</Text>}
-      <GraphWithDate
-        title={title}
-        data={dataPoints}
-        xDataKey="time"
-        xLabel="Date & Time"
-        yDataKey="value"
-        yLabel={yAxisLabel}
-        computeDomain={computeDomain}
-        lineName={title}
-        stroke="#8884d8"
-      />
+      <Flex direction="row" gap={4} align="center">
+        <GraphWithDate
+          title={title}
+          data={dataPoints}
+          xDataKey="time"
+          xLabel="Date & Time"
+          yDataKey="value"
+          yLabel={yAxisLabel}
+          computeDomain={domain}
+          lineName={title}
+          stroke="#8884d8"
+        />
+        <Box
+          mb={4}
+          p={2}
+          border="1px solid"
+          borderColor="gray.300"
+          borderRadius="md"
+          width="fit-content"
+        >
+          {computeDifference && <Text mb={2}>Cumulative Total: {cumulativeTotal}</Text>}
+          {displayedMapping.length > 0 && (
+            <>
+              <Text fontWeight="bold" mb={2}>Selected Variables:</Text>
+              {displayedMapping.map((item, idx) => (
+                <Text key={idx}>
+                  {item.variableName}:{" "}
+                  {currentVariables[item.variableName] !== undefined
+                    ? currentVariables[item.variableName]
+                    : (previewTokens[item.index] || 'N/A')}
+                </Text>
+              ))}
+              <Text mt={2} fontWeight="bold">Formula: {formula}</Text>
+            </>
+          )}
+        </Box>
+      </Flex>
     </Box>
   );
+  
 };
 
 export default CustomGraph;

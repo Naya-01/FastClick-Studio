@@ -51,6 +51,7 @@ const GraphWithDate = ({
         <XAxis
           dataKey={xDataKey}
           interval={tickInterval}
+          padding={ data.length === 1 ? { left: 0, right: chartWidth * 0.69 } : {} }  //to force to be displayed on the left when 1 element
           tick={{
             angle: -90,
             textAnchor: 'start',

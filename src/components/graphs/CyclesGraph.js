@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { WebsocketService } from '../../services/webSocketService';
 import GraphWithDate from './GraphWithDate';
+import { computeDomain } from '../../utils/graphUtils';
 
 const CyclesGraph = ({ selectedNode }) => {
   const [graphData, setGraphData] = useState([]);
@@ -39,15 +40,8 @@ const CyclesGraph = ({ selectedNode }) => {
     });
   };
 
-  const computeDomain = () => {
-    if (graphData.length === 0) return [0, 1];
-    const values = graphData.map(d => d.cyclesPerTask);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    if (min === Infinity || max === -Infinity || isNaN(min) || isNaN(max)) return [0, 1];
-    if (min === max) return [min - 1, max + 1];
-    const margin = (max - min) * 0.1;
-    return [min - margin, max + margin];
+  const domain = () => {
+    return computeDomain(graphData, 'cyclesPerTask');
   };
 
   useEffect(() => {
@@ -77,7 +71,7 @@ const CyclesGraph = ({ selectedNode }) => {
         xLabel="Date & Time"
         yDataKey="cyclesPerTask"
         yLabel={`Cycles/${lastType}`}
-        computeDomain={computeDomain}
+        computeDomain={domain}
         lineName={`Cycles per ${lastType}`}
         stroke="#8884d8"
       />
