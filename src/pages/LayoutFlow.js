@@ -14,6 +14,9 @@ import {
 import '@xyflow/react/dist/style.css';
 import { 
   Box,
+  Spinner,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth } from '../utils/graphUtils';
 import NodeListSidebar from '../components/NodeListSidebar';
@@ -73,6 +76,11 @@ const LayoutFlow = () => {
   const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
   const [pendingEdgeId, setPendingEdgeId] = useState(null);
   const [newElementName, setNewElementName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [interv, setInterv] = useState(5); // in seconds
+  const [colorsApplied, setColorsApplied] = useState(false);
+  const lastReadingCountRef = useRef({});
+
 
   const { classesData } = useClasses();
 
@@ -100,6 +108,147 @@ const LayoutFlow = () => {
   }, [edges]);
 
 
+  const propagateBackward = (nodesList, edgesList) => {
+
+    const outCount = {};
+    edgesList.forEach(edge => {
+      outCount[edge.source] = (outCount[edge.source] || 0) + 1;
+    });
+
+    const nodeMap = {};
+    nodesList.forEach(node => {
+      nodeMap[node.id] = { ...node, style: { ...node.style } };
+    });
+
+    const visited = new Set();
+    const terminalNodes = nodesList.filter(node => !edgesList.some(edge => edge.source === node.id));
+    terminalNodes.forEach(terminal => {
+      let current = terminal;
+      while (true) {
+        if (visited.has(current.id)) break;
+        visited.add(current.id);
+
+        const parentEdge = edgesList.find(edge => edge.target === current.id);
+        if (!parentEdge) break;
+
+        const parent = nodeMap[parentEdge.source];
+        if (!parent) break;
+
+        if ((parent.data.outputs || 0) > 1) break;
+        
+        parentEdge.style.stroke = parent.style.border.replace('1px solid ', '');
+        parent.style.backgroundColor = current.style.backgroundColor;
+        parent.style.border = current.style.border;
+        current = parent;
+      }
+    });
+    return Object.values(nodeMap);
+  };
+  
+  const propagateForward = (nodesList, edgesList) => {
+
+    const nodeMap = {};
+    nodesList.forEach(node => {
+      nodeMap[node.id] = { ...node, style: { ...node.style } };
+    });
+
+    const visited = new Set();
+    const sourceNodes = nodesList.filter(node => !edgesList.some(edge => edge.target === node.id));
+    sourceNodes.forEach(source => {
+      let current = source;
+      while (true) {
+        if (visited.has(current.id)) break;
+        visited.add(current.id);
+
+        const childEdge = edgesList.find(edge => edge.source === current.id);
+        if (!childEdge) break;
+
+        const child = nodeMap[childEdge.target];
+        if (!child) break;
+
+        if ((current.data.outputs || 0) > 1 || (current.data.inputs || 0) > 1) break;
+
+        child.style.backgroundColor = current.style.backgroundColor;
+        child.style.border = current.style.border;
+        current = child;
+      }
+    });
+    return Object.values(nodeMap);
+  };
+  
+  const propagateMix = (nodesList, edgesList) => {
+    const nodeMap = {};
+    nodesList.forEach(node => {
+      nodeMap[node.id] = { 
+        ...node, 
+        data: { ...node.data },
+        style: { ...node.style }
+      };
+    });
+    
+    const visitedBackward = new Set();
+    const visitedForward = new Set();
+    
+    const backwardNodes = (nodeId) => {
+      if (visitedBackward.has(nodeId)) return;
+
+      visitedBackward.add(nodeId);
+      const parentEdge = edgesList.find(edge => edge.target === nodeId);
+
+      if (!parentEdge) return;
+
+      const parentId = parentEdge.source;
+
+      if (nodeMap[parentId].data.outputs > 1) return;
+
+      nodeMap[parentId].style.backgroundColor = nodeMap[nodeId].style.backgroundColor;
+      nodeMap[parentId].style.border = nodeMap[nodeId].style.border;
+      backwardNodes(parentId);
+    };
+    
+    const forwardNodes = (nodeId) => {
+      if (visitedForward.has(nodeId)) return;
+
+      visitedForward.add(nodeId);
+      const childEdge = edgesList.find(edge => edge.source === nodeId);
+
+      if (!childEdge) return;
+
+      const childId = childEdge.target;
+
+      nodeMap[childId].style.backgroundColor = nodeMap[nodeId].style.backgroundColor;
+      nodeMap[childId].style.border = nodeMap[nodeId].style.border;
+
+      if (nodeMap[childId].data.inputs > 1 || nodeMap[childId].data.outputs >1) return;
+
+      forwardNodes(childId);
+    };
+    
+    nodesList.forEach(node => {
+      const element = router.getElement(node.id);
+      const hasCountHandler = element.handlers.find(handler => handler.name.toLowerCase() === "count");
+      if (!hasCountHandler) return;
+      
+      const inputs = node.data.inputs;
+      const outputs = node.data.outputs;
+      
+      if (inputs === 1 && outputs === 1) {
+        backwardNodes(node.id);
+        forwardNodes(node.id);
+      }
+    });
+    
+    return Object.values(nodeMap);
+  };
+  
+  const propagateColorsBackwardAndForward = (nodesList, edgesList, router) => {
+    const backwardNodes = propagateBackward(nodesList, edgesList);
+    const forwardNodes = propagateForward(backwardNodes, edgesList);
+    const finalNodes = propagateMix(forwardNodes, edgesList, router);
+    return finalNodes;
+  };
+  
+
   const applyColorsToGraph = useCallback(
     async (nodesList, edgesList, routerInstance) => {
       const nodesWithCount = nodesList.filter((node) => {
@@ -124,9 +273,15 @@ const LayoutFlow = () => {
           ) {
             const idx = nodesWithCount.findIndex((n) => n.id === node.id);
             if (idx !== -1) {
+
               const newCount = Number(results[idx]);
-              element.count = newCount;
-              const { background, border } = getNodeColorByCount(newCount);
+              const prevCount = lastReadingCountRef.current[node.id] || 0;
+              const countDiff = newCount - prevCount;
+              const countPerSecond = countDiff / (interv); // normalise per second
+              lastReadingCountRef.current[node.id] = newCount; 
+
+              const { background, border } = getNodeColorByCount(countPerSecond, 2, 6);
+
               return {
                 ...node,
                 style: {
@@ -153,7 +308,7 @@ const LayoutFlow = () => {
           }
           return edge;
         });
-        return { updatedNodes, updatedEdges };
+        return { updatedNodes: updatedNodes, updatedEdges: updatedEdges };
       } catch (err) {
         return { updatedNodes: nodesList, updatedEdges: edgesList };
       }
@@ -165,18 +320,34 @@ const LayoutFlow = () => {
     if (!router || nodesRef.current.length === 0) return;
     applyColorsToGraph(nodesRef.current, edgesRef.current, router)
       .then(({ updatedNodes, updatedEdges }) => {
-        setNodes(updatedNodes);
-        setEdges(updatedEdges);
+        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router);
+        const newUpdateEdges = updatedEdges.map((edge) => {
+          const targetNode = finalNodes.find((node) => node.id === edge.target);
+          if (targetNode && targetNode.style && targetNode.style.border) {
+            return {
+              ...edge,
+              style: {
+                ...edge.style,
+                stroke: targetNode.style.border.replace('1px solid ', ''),
+                strokeWidth: 2,
+              },
+            };
+          }
+          return edge;
+        });
+        setNodes(finalNodes);
+        setEdges(newUpdateEdges);
       })
       .catch((err) => console.error(err));
   }, [router, applyColorsToGraph]);
 
   const fetchData = async () => {
+    setLoading(true);
       const subscription = webSocketService.getFlatConfig().subscribe({
         next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
           await routerTreeModel.fetchHandlersForElementsAsync();
-          setRouter(routerTreeModel);
+          setRouter(routerTreeModel); 
           const pairs = routerTreeModel.getAllPairs();
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
@@ -193,14 +364,18 @@ const LayoutFlow = () => {
             setNodes(layoutedNodes);
             setEdges(edgesWithProposal);
 
+            setColorsApplied(false);
+
             applyColorsToGraph(layoutedNodes, edgesWithProposal, routerTreeModel)
             .then(({ updatedNodes, updatedEdges }) => {
               setNodes(updatedNodes);
               setEdges(updatedEdges);
+              setColorsApplied(true);
             })
             .catch((err) => console.error(err));
 
           });
+
         },
         error: (error) => {
           setConnectionError(true);
@@ -213,6 +388,16 @@ const LayoutFlow = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (colorsApplied) {
+      setTimeout(() => {
+        updateColors();
+        setColorsApplied(false);
+        setLoading(false);
+      }, 50);
+    }
+  }, [colorsApplied]);
+  
   useEffect(() => {
     if (configUpdated) {
       fetchData();
@@ -237,7 +422,7 @@ const LayoutFlow = () => {
     if (!router) return;
     const intervalId = setInterval(() => {
       updateColors();
-    }, 5000);
+    }, interv * 1000);
     return () => clearInterval(intervalId);
   }, [router, updateColors]);
 
@@ -552,7 +737,21 @@ const LayoutFlow = () => {
           onTargetNode={handleTargetNode} 
           />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
-          <ReactFlow
+          {loading && (
+            <Box
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
+              zIndex="100"
+            >
+              <VStack color="teal">
+                  <Spinner color="blue.500" />
+                  <Text color="blue.500">Loading...</Text>
+              </VStack>
+            </Box>
+          )}
+          {!loading && (<ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -582,7 +781,7 @@ const LayoutFlow = () => {
               onEditNode={openEditModal}
               router={router}
             />}
-          </ReactFlow>
+          </ReactFlow>)}
         </Box>
 
         <GraphControls 
