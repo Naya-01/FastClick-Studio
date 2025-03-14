@@ -14,27 +14,37 @@ import {
 import '@xyflow/react/dist/style.css';
 import { 
   Box,
-  Button,
-  Input
+  Spinner,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
-import { handleData, calculateNodeWidth } from '../utils/graphUtils';
-import NodeListSidebar from './NodeListSidebar';
-import NodeDetailsModal from './NodeDetailsModal';
-import DynamicHandlesNode from './DynamicHandlesNode';
+import { handleData, calculateNodeWidth, getAdjustedCoordinates } from '../utils/graphUtils';
+import NodeListSidebar from '../components/NodeListSidebar';
+import NodeDetailsModal from '../components/NodeDetailsModal';
+import DynamicHandlesNode from '../components/DynamicHandlesNode';
 import { WebsocketService } from '../services/webSocketService';
 import { RouterTreeModel } from '../models/router-tree-model';
 import { lespairs } from '../data/pairs';
-import ContextMenu from './ContextMenu';
-import NodeModal from './NodeModal';
+import ContextMenu from '../components/ContextMenu';
+import NodeModal from '../components/NodeModal';
 import { useGraphOperations } from '../hooks/useGraphOperations';
 import { useClickConfig } from '../hooks/useClickConfig';
-import { GraphControls } from './GraphControls';
-import DragPanel from './DragPanel';
+import { GraphControls } from '../components/GraphControls';
+import DragPanel from '../components/DragPanel';
 import { useAlert } from '../context/AlertContext';
-import {getLiveColor, getAddColor, getLiveBorderColor, getAddBorderColor} from '../utils/colors';
-import ProposalEdge from './ProposalEdge';
+import {
+  getLiveColor,
+  getAddColor,
+  getLiveBorderColor,
+  getAddBorderColor,
+  getNodeColorByCount
+} from '../utils/colors';
+import ProposalEdge from '../components/ProposalEdge';
 import {getLayoutedElements} from '../utils/layoutUtils';
 import { useClasses } from '../context/ClassesContext';
+import { lastValueFrom } from 'rxjs';
+import AddElementModal from '../components/AddElementModal'
+import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -62,10 +72,16 @@ const LayoutFlow = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const { screenToFlowPosition, setCenter } = useReactFlow();
-  const nodesRef = useRef([]);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
   const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
   const [pendingEdgeId, setPendingEdgeId] = useState(null);
   const [newElementName, setNewElementName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [interv, setInterv] = useState(5); // in seconds
+  const [colorsApplied, setColorsApplied] = useState(false);
+  const lastReadingCountRef = useRef({});
+
 
   const { classesData } = useClasses();
 
@@ -84,12 +100,113 @@ const LayoutFlow = () => {
 
   const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigUpdated);
 
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);  
+
+  const applyColorsToGraph = useCallback(
+    async (nodesList, edgesList, routerInstance) => {
+      const nodesWithCount = nodesList.filter((node) => {
+        const element = routerInstance.getElement(node.id);
+        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'count');
+      });
+      if (nodesWithCount.length === 0) {
+        return { updatedNodes: nodesList, updatedEdges: edgesList };
+      }
+      try {
+        const results = await Promise.all(
+          nodesWithCount.map((node) =>
+            lastValueFrom(webSocketService.getHandlers(node.id, 'count'))
+          )
+        );
+        const updatedNodes = nodesList.map((node) => {
+          const element = routerInstance.getElement(node.id);
+          if (
+            element &&
+            element.handlers &&
+            element.handlers.some((h) => h.name.toLowerCase() === 'count')
+          ) {
+            const idx = nodesWithCount.findIndex((n) => n.id === node.id);
+            if (idx !== -1) {
+
+              const newCount = Number(results[idx]);
+              const prevCount = lastReadingCountRef.current[node.id] || 0;
+              const countDiff = newCount - prevCount;
+              const countPerSecond = countDiff / (interv); // normalise per second
+              lastReadingCountRef.current[node.id] = newCount; 
+
+              const { background, border } = getNodeColorByCount(countPerSecond, 2, 6);
+
+              return {
+                ...node,
+                style: {
+                  ...node.style,
+                  backgroundColor: background,
+                  border: `1px solid ${border}`,
+                },
+              };
+            }
+          }
+          return node;
+        });
+        const updatedEdges = edgesList.map((edge) => {
+          const targetNode = updatedNodes.find((node) => node.id === edge.target);
+          if (targetNode && targetNode.style && targetNode.style.border) {
+            return {
+              ...edge,
+              style: {
+                ...edge.style,
+                stroke: targetNode.style.border.replace('1px solid ', ''),
+                strokeWidth: 2,
+              },
+            };
+          }
+          return edge;
+        });
+        return { updatedNodes: updatedNodes, updatedEdges: updatedEdges };
+      } catch (err) {
+        return { updatedNodes: nodesList, updatedEdges: edgesList };
+      }
+    },
+    [webSocketService]
+  );
+
+  const updateColors = useCallback(() => {
+    if (!router || nodesRef.current.length === 0) return;
+    applyColorsToGraph(nodesRef.current, edgesRef.current, router)
+      .then(({ updatedNodes, updatedEdges }) => {
+        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router);
+        const newUpdateEdges = updatedEdges.map((edge) => {
+          const targetNode = finalNodes.find((node) => node.id === edge.target);
+          if (targetNode && targetNode.style && targetNode.style.border) {
+            return {
+              ...edge,
+              style: {
+                ...edge.style,
+                stroke: targetNode.style.border.replace('1px solid ', ''),
+                strokeWidth: 2,
+              },
+            };
+          }
+          return edge;
+        });
+        setNodes(finalNodes);
+        setEdges(newUpdateEdges);
+      })
+      .catch((err) => console.error(err));
+  }, [router, applyColorsToGraph]);
+
   const fetchData = async () => {
+    setLoading(true);
       const subscription = webSocketService.getFlatConfig().subscribe({
         next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
           await routerTreeModel.fetchHandlersForElementsAsync();
-          setRouter(routerTreeModel);
+          setRouter(routerTreeModel); 
           const pairs = routerTreeModel.getAllPairs();
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
@@ -105,7 +222,19 @@ const LayoutFlow = () => {
           
             setNodes(layoutedNodes);
             setEdges(edgesWithProposal);
+
+            setColorsApplied(false);
+
+            applyColorsToGraph(layoutedNodes, edgesWithProposal, routerTreeModel)
+            .then(({ updatedNodes, updatedEdges }) => {
+              setNodes(updatedNodes);
+              setEdges(updatedEdges);
+              setColorsApplied(true);
+            })
+            .catch((err) => console.error(err));
+
           });
+
         },
         error: (error) => {
           setConnectionError(true);
@@ -118,6 +247,16 @@ const LayoutFlow = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (colorsApplied) {
+      setTimeout(() => {
+        updateColors();
+        setColorsApplied(false);
+        setLoading(false);
+      }, 50);
+    }
+  }, [colorsApplied]);
+  
   useEffect(() => {
     if (configUpdated) {
       fetchData();
@@ -137,6 +276,14 @@ const LayoutFlow = () => {
       setConnectionError(false);
     }
   }, [connectionError, navigate, showAlert]);
+
+  useEffect(() => {
+    if (!router) return;
+    const intervalId = setInterval(() => {
+      updateColors();
+    }, interv * 1000);
+    return () => clearInterval(intervalId);
+  }, [router, updateColors]);
 
   const openModal = (nodeId) => {
     const node = nodes.find((n) => n.id === nodeId);
@@ -254,6 +401,9 @@ const LayoutFlow = () => {
     });
     setIsAddElementModalOpen(false);
     setPendingEdgeId(null);
+    setTimeout(() => {
+      handleReorganizeNodes();
+    }, 50);
   };
 
   const handleAddNode = (newNode, forcedPosition = null) => {
@@ -281,21 +431,6 @@ const LayoutFlow = () => {
     };
   
     setNodes((prevNodes) => [...prevNodes, newNodeConfig]);
-  };
-
-  const getAdjustedCoordinates = (event, wrapperRef) => {
-    const wrapperBounds = wrapperRef.current.getBoundingClientRect();
-    const transform = wrapperRef.current.querySelector('.react-flow__viewport').style.transform;
-  
-    const match = transform.match(/matrix\(([^,]+),[^,]+,[^,]+,[^,]+,([^,]+),([^,]+)\)/);
-    const scale = match ? parseFloat(match[1]) : 1;
-    const offsetX = match ? parseFloat(match[2]) : 0;
-    const offsetY = match ? parseFloat(match[3]) : 0;
-  
-    const adjustedX = (event.clientX - wrapperBounds.left - offsetX) / scale;
-    const adjustedY = (event.clientY - wrapperBounds.top - offsetY) / scale;
-  
-    return { x: adjustedX, y: adjustedY };
   };
   
   const onContextMenu = useCallback(
@@ -419,21 +554,21 @@ const LayoutFlow = () => {
       ...node,
       position: { x: 0, y: 0 },
     }));
-    const layout = await getLayoutedElements(resetNodes, edges);
+    const layout = await getLayoutedElements(resetNodes, edgesRef.current);
     setNodes(layout.nodes);
     setEdges(layout.edges);
   };
 
-  const handleTargetNode = useCallback((id) => {
-    const node = nodes.find(n => n.id === id);
+  const handleTargetNode = useCallback((nodeId) => {
+    const node = nodesRef.current.find(n => n.id === nodeId);
     if (node && node.position && node.style) {
       const nodeWidth = parseFloat(node.style.width) || 0;
-      const node_height = parseFloat(node.style.height) || 0;
+      const nodeHeight = parseFloat(node.style.height) || 0;
       const centerX = node.position.x + nodeWidth / 2;
-      const centerY = node.position.y + node_height / 2;
+      const centerY = node.position.y + nodeHeight / 2;
       setCenter(centerX, centerY, { duration: 500 });
     }
-  }, [nodes, setCenter]);
+  }, [setCenter]);
   
   return (
     <>
@@ -446,7 +581,21 @@ const LayoutFlow = () => {
           onTargetNode={handleTargetNode} 
           />
         <Box flex="1" height="100%" pr="250px" ref={reactFlowWrapper}>
-          <ReactFlow
+          {loading && (
+            <Box
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
+              zIndex="100"
+            >
+              <VStack color="teal">
+                  <Spinner color="blue.500" />
+                  <Text color="blue.500">Loading...</Text>
+              </VStack>
+            </Box>
+          )}
+          {!loading && (<ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -476,7 +625,7 @@ const LayoutFlow = () => {
               onEditNode={openEditModal}
               router={router}
             />}
-          </ReactFlow>
+          </ReactFlow>)}
         </Box>
 
         <GraphControls 
@@ -505,44 +654,14 @@ const LayoutFlow = () => {
 
       <NodeDetailsModal isOpen={isModalOpen} onClose={closeModal} selectedNode={selectedNode} router={router}/>
 
-      {isAddElementModalOpen && (
-        <Box
-          position="fixed"
-          top="50%"
-          left="50%"
-          transform="translate(-50%, -50%)"
-          bg="white"
-          p={4}
-          boxShadow="lg"
-          zIndex={1000}
-          borderRadius="md"
-          maxW="300px"
-        >
-          <Box mb={3}>
-            <Input
-              placeholder="Entrez le nom de l'élément"
-              value={newElementName}
-              onChange={(e) => setNewElementName(e.target.value)}
-              isRequired
-              list="classes-suggestions"
-            />
-            <datalist id="classes-suggestions">
-              {classesData &&
-                classesData.map((className) => (
-                  <option key={className} value={className} />
-                ))}
-            </datalist>
-          </Box>
-          <Box display="flex" justifyContent="flex-end">
-            <Button mr={2} onClick={handleAddElementCancel}>
-              Annuler
-            </Button>
-            <Button colorScheme="blue" onClick={handleAddElementConfirm}>
-              Confirmer
-            </Button>
-          </Box>
-        </Box>
-      )}
+      <AddElementModal
+        isOpen={isAddElementModalOpen}
+        onCancel={handleAddElementCancel}
+        onConfirm={handleAddElementConfirm}
+        newElementName={newElementName}
+        setNewElementName={setNewElementName}
+        classesData={classesData}
+      />
     </>
   );
 };
