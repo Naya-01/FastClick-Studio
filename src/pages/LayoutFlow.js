@@ -82,7 +82,7 @@ const LayoutFlow = () => {
   const lastReadingCountRef = useRef({});
 
 
-  const { classesData } = useClasses();
+  const { classesData, refetchClasses } = useClasses();
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -244,6 +244,7 @@ const LayoutFlow = () => {
 
   useEffect(() => {
     fetchData();
+    refetchClasses();
   }, []);
 
   useEffect(() => {
