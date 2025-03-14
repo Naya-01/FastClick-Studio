@@ -17,6 +17,7 @@ const GraphWithDate = ({
   margin = { top: 20, right: 150, left: 100 },
   maxTicks = 10,
   turnAngle = true,
+  startTime,
 }) => {
   const rawDomain = useMemo(() => computeDomain(), [computeDomain, data]);
   const fixedDomain = useMemo(() => [Math.max(0, rawDomain[0]), rawDomain[1]], [rawDomain]);
@@ -40,7 +41,7 @@ const GraphWithDate = ({
   return (
     <Box mt={5}>
       <Text fontSize="lg" fontWeight="bold" mb={2}>
-        {title}
+        {title} {startTime && `- Started at (${startTime})`}
       </Text>
       <AreaChart
         width={chartWidth}

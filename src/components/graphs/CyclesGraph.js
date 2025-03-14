@@ -76,6 +76,7 @@ const CyclesGraph = ({ selectedNode }) => {
         lineName={`Cycles per ${lastType}`}
         stroke="#8884d8"
         turnAngle={false}
+        startTime={new Date(startTimeRef.current).toLocaleString()}
       />
     </Box>
   );

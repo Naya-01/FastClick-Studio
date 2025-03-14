@@ -268,6 +268,7 @@ const CustomGraph = ({ selectedNode, availableHandlers, title = "Custom Graph" }
           lineName={title}
           stroke="#8884d8"
           turnAngle={false}
+          startTime={new Date(startTimeRef.current).toLocaleString()}
         />
         <Box
           mb={4}
