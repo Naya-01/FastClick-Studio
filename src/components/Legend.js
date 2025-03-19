@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Box, Text, HStack, IconButton, Input, Collapse, VStack } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, HStack, Input, Collapse, VStack } from '@chakra-ui/react';
 import { getAddColor } from '../utils/colors';
 import { COLORS_LEGEND } from '../utils/colors';
+
+const LEGEND_STORAGE = 'legendColorParams';
 
 const Legend = ({ colorParams, setColorParams }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -16,6 +18,22 @@ const Legend = ({ colorParams, setColorParams }) => {
   const toggleEdit = () => {
     setIsEditing((prev) => !prev);
   };
+
+  useEffect(() => {
+    const stored = localStorage.getItem(LEGEND_STORAGE);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setColorParams(parsed);
+      } catch (e) {
+        console.error("Error while reading preferences", e);
+      }
+    }
+  }, [setColorParams]);
+
+  useEffect(() => {
+    localStorage.setItem(LEGEND_STORAGE, JSON.stringify(colorParams));
+  }, [colorParams]);
 
   return (
     <Box
