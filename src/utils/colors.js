@@ -7,6 +7,12 @@ export const COLORS = [
     '#007a7a',
   ];
 
+export const COLORS_LEGEND = {
+    low: { background: '#cce5ff', border: '#004085' },
+    medium: { background: '#ffe799', border: '#ffcf33' },
+    high: { background: '#e77e88', border: '#ff3300' },
+  };
+
 export const getColor = (index1, index2) => {
     const colorIndex = Math.max(index1, index2) % COLORS.length;
     return COLORS[colorIndex];
@@ -36,14 +42,11 @@ export const getEdgeColor = () => {
 
 export const getNodeColorByCount = (count, low, medium) => {
   if (count < low) {
-    // Blue
-    return { background: '#cce5ff', border: '#004085' };
-  } else if (count < medium) {
-    // Yellow
-    return { background: '#ffe799', border: '#ffcf33' };
+    return COLORS_LEGEND.low;
+  } else if (count <= medium) {
+    return COLORS_LEGEND.medium;
   } else {
-    // Red
-    return { background: '#e77e88', border: '#ff3300' };
+    return COLORS_LEGEND.high;
   }
 };
   

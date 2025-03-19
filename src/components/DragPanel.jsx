@@ -3,7 +3,7 @@ import { Box, Text, Input, List, ListItem, Button, Tooltip } from '@chakra-ui/re
 import { parseXMLFile } from '../services/elementService';
 import { getLiveColor } from '../utils/colors';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 11;
 
 const defaultNode = { 
   id: '', 
@@ -87,7 +87,7 @@ const DragPanel = () => {
           backgroundColor: '#fff',
         }}
       >
-        Drag Node
+        Drag custom Node
       </Box>
 
       <List spacing={3}>

@@ -19,7 +19,7 @@ export const ClassesProvider = ({ children }) => {
         setLoading(false);
       },
       error: (err) => {
-        console.error("Erreur lors du fetch des classes:", err);
+        console.error("Error when fetching classes:", err);
         setError(err);
         setLoading(false);
       },

@@ -44,6 +44,7 @@ import { lastValueFrom } from 'rxjs';
 import AddElementModal from '../components/AddElementModal'
 import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
 import { useDownloadImage } from '../hooks/useDownloadImage';
+import Legend from '../components/Legend';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -80,6 +81,8 @@ const LayoutFlow = () => {
   const [interv, setInterv] = useState(5); // in seconds
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
+  const [colorParams, setColorParams] = useState({ low: 5, medium: 12 });
+
 
 
   const { classesData, refetchClasses } = useClasses();
@@ -138,7 +141,7 @@ const LayoutFlow = () => {
               const countPerSecond = countDiff / (interv); // normalise per second
               lastReadingCountRef.current[node.id] = newCount; 
 
-              const { background, border } = getNodeColorByCount(countPerSecond, 2, 6);
+              const { background, border } = getNodeColorByCount(countPerSecond, colorParams.low, colorParams.medium);
 
               return {
                 ...node,
@@ -591,7 +594,10 @@ const LayoutFlow = () => {
             style={{ width: '100%', height: '100%' }}
           >
             <Background color="#f0f0f0" gap={16} />
-            <Controls showInteractive={false} />
+            <Controls 
+            showInteractive={false}
+            style={{ bottom: 10, left: 200}}
+            />
             <MiniMap />
             {contextMenu && <ContextMenu 
               {...contextMenu} 
@@ -612,6 +618,8 @@ const LayoutFlow = () => {
           onGenerateConfig={generateClickConfig}
           onReorganize={handleReorganizeNodes}
         />
+
+        <Legend colorParams={colorParams} setColorParams={setColorParams} />
       </Box>
 
       <NodeModal 
