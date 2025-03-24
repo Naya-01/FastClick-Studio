@@ -70,6 +70,22 @@ export class WebsocketService {
     });
   }
 
+  getElementMap(): Observable<string> {
+    return new Observable(observer => {
+      axios.get('/fastclick/element_map', {
+        headers: {
+          'Content-Type': 'text/plain',
+          'X-API-TARGET': getApiUrl(),
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+
   getAllHandlersFields(element: string): Observable<string> {
     return new Observable(observer => {
       axios.get(`/fastclick/${element}`, {

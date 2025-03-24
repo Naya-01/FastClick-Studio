@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Text, Input, List, ListItem, Button, Tooltip } from '@chakra-ui/react';
 import { parseXMLFile } from '../services/elementService';
 import { getLiveColor } from '../utils/colors';
+import { WebsocketService } from '../services/webSocketService';
 
 const ITEMS_PER_PAGE = 11;
 
@@ -17,18 +18,28 @@ const DragPanel = () => {
   const [elements, setElements] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const webSocketService = new WebsocketService();
 
-  const handleFileUpload = useCallback((event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const parsedElements = parseXMLFile(e.target.result);
-        setElements(parsedElements);
-        setCurrentPage(0);
-      };
-      reader.readAsText(file);
-    }
+  const fetchElementMap = useCallback(() => {
+    const subscription = webSocketService.getElementMap().subscribe({
+      next: (elementMapString) => {
+        try {
+          const parsedElements = parseXMLFile(elementMapString);
+          setElements(parsedElements);
+          setCurrentPage(0);
+        } catch (error) {
+          console.error("Error parsing XML:", error);
+        }
+      },
+      error: (error) => {
+        console.error("Error fetching map element:", error);
+      },
+    });
+    return () => subscription.unsubscribe();
+  }, [webSocketService]);
+
+  useEffect(() => {
+    fetchElementMap();
   }, []);
 
   const onDragStart = useCallback((event, element) => {
@@ -65,8 +76,6 @@ const DragPanel = () => {
       bottom="0"
       zIndex={10}
     >
-      <Text fontSize={13} mb={2}>By default elementmap.xml is located at '/usr/local/share/click/elementmap.xml'</Text>
-      <Input type="file" accept=".xml" onChange={handleFileUpload} mb={3} />
       <Input
         placeholder="Search elements..."
         mb={3}
