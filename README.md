@@ -43,7 +43,6 @@ Créez un fichier `.env` à la racine du projet et ajoutez les variables suivant
 
 ```sh
 PORT=
-REACT_APP_API_URL=
 ```
 
 **Note** : Un fichier `.env.example` est disponible dans le dépôt si besoin.
@@ -67,4 +66,3 @@ npm run start
 ##  Remarque
 
 - Assurez-vous que **FastClick** est bien configuré.
-- Vérifiez que le port défini dans `REACT_APP_API_URL` correspond bien à celui utilisé par FastClick.
