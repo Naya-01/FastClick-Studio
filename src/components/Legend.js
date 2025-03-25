@@ -10,9 +10,9 @@ const Legend = ({ colorParams, setColorParams }) => {
 
   const legendItems = [
     { label: 'new element not saved', color: getAddColor() },
-    { label: `packet/sec < ${colorParams.low}`, color: COLORS_LEGEND.low.background },
-    { label: `${colorParams.low} ≤ packet/sec ≤ ${colorParams.medium}`, color: COLORS_LEGEND.medium.background },
-    { label: `packet/sec > ${colorParams.medium}`, color: COLORS_LEGEND.high.background },
+    { label: `packet/sec < ${colorParams.medium}`, color: COLORS_LEGEND.low.background },
+    { label: `${colorParams.medium} ≤ packet/sec ≤ ${colorParams.high}`, color: COLORS_LEGEND.medium.background },
+    { label: `packet/sec > ${colorParams.high}`, color: COLORS_LEGEND.high.background },
   ];
 
   const toggleEdit = () => {
@@ -71,18 +71,6 @@ const Legend = ({ colorParams, setColorParams }) => {
       <Collapse in={isEditing} animateOpacity>
         <VStack mt={2} spacing={2} align="start">
           <HStack spacing={2}>
-            <Text fontSize="sm">Low:</Text>
-            <Input
-              size="xs"
-              type="number"
-              value={colorParams.low}
-              onChange={(e) =>
-                setColorParams({ ...colorParams, low: Number(e.target.value) })
-              }
-              width="60px"
-            />
-          </HStack>
-          <HStack spacing={2}>
             <Text fontSize="sm">Medium:</Text>
             <Input
               size="xs"
@@ -90,6 +78,18 @@ const Legend = ({ colorParams, setColorParams }) => {
               value={colorParams.medium}
               onChange={(e) =>
                 setColorParams({ ...colorParams, medium: Number(e.target.value) })
+              }
+              width="60px"
+            />
+          </HStack>
+          <HStack spacing={2}>
+            <Text fontSize="sm">High:</Text>
+            <Input
+              size="xs"
+              type="number"
+              value={colorParams.high}
+              onChange={(e) =>
+                setColorParams({ ...colorParams, high: Number(e.target.value) })
               }
               width="60px"
             />

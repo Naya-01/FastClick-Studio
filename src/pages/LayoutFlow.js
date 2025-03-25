@@ -81,7 +81,7 @@ const LayoutFlow = () => {
   const [interv, setInterv] = useState(5); // in seconds
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
-  const [colorParams, setColorParams] = useState({ low: 5, medium: 12 });
+  const [colorParams, setColorParams] = useState({ medium: 5, high: 12 });
 
 
 
@@ -141,7 +141,7 @@ const LayoutFlow = () => {
               const countPerSecond = countDiff / (interv); // normalise per second
               lastReadingCountRef.current[node.id] = newCount; 
 
-              const { background, border } = getNodeColorByCount(countPerSecond, colorParams.low, colorParams.medium);
+              const { background, border } = getNodeColorByCount(countPerSecond, colorParams.medium, colorParams.high);
 
               return {
                 ...node,
