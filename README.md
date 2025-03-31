@@ -34,7 +34,7 @@ The web interface allows you to visualize and configure FastClick elements.
 
 ```sh
 git clone <URL_DU_REPO>
-cd fastclick-visualizer-react
+cd FastClick-Studio
 ```
 
 ### Environment Configuration
