@@ -1,61 +1,61 @@
-# FastClick Visualizer
+# FastClick Studio
 
-## Installation et Configuration
+## Installation and Setup
 
-### Installation de **FastClick**
+### Installing **FastClick**
 
-FastClick est nécessaire. Pour l'installer et le configurer correctement, consultez la documentation officielle :
+FastClick is required. To install and configure it properly, refer to the official documentation:
 
 **FastClick Wiki** : [FastClick GitHub Wiki](https://github.com/tbarbette/fastclick)
 
-Lors du développement, j'utilise la configuration suivante :
+During development, I use the following configuration:
 
 ```sh
 ./configure --enable-userlevel --disable-linuxmodule --enable-user-multithread --enable-stats=2
 ```
 
-### Lancement de **Click** avec HotSwapping
+### Running FastClick with HotSwapping
 
-Une fois FastClick installé, démarrez **Click** en mode **hotswapping** avec la commande suivante :
+Once FastClick is installed, start Click in hotswapping mode with the following command:
 
 ```sh
 ./bin/click -R <click file> -p 7777
 ```
 
-**Important** : L'option `-R` est essentielle pour activer le **hotswapping**.
+**Important** : The `-R` option is essential to enable **hotswapping**.
 
 ---
 
-## Installation de l'Interface Web
+## Installing the Web Interface
 
-L'interface web permet de visualiser et configurer les elements de FastClick.
+The web interface allows you to visualize and configure FastClick elements.
 
-### Cloner le dépôt
+### Clone the repository
 
 ```sh
 git clone <URL_DU_REPO>
 cd fastclick-visualizer-react
 ```
 
-### Configuration de l'environnement
+### Environment Configuration
 
-Créez un fichier `.env` à la racine du projet et ajoutez les variables suivantes :
+Create a `.env` file at the root of the project and add the following variables:
 
 ```sh
 PORT=
 ```
 
-**Note** : Un fichier `.env.example` est disponible dans le dépôt si besoin.
+**Note** : A `.env.example` file is available in the repository if needed.
 
-### Installation des dépendances
+### Installing dependencies
 
-Installez toutes les dépendances nécessaires avec **npm** :
+Install all necessary dependencies using **npm** :
 
 ```sh
 npm install
 ```
 
-### Lancer l'application
+### Start the application
 
 ```sh
 npm run start
@@ -63,6 +63,6 @@ npm run start
 
 ---
 
-##  Remarque
+##  Note
 
-- Assurez-vous que **FastClick** est bien configuré.
+- Make sure FastClick is properly configured.
