@@ -1,8 +1,6 @@
 # FastClick Studio
 
-## Installation and Setup
-
-### Installing **FastClick**
+## Installing **FastClick**
 
 FastClick is required. To install and configure it properly, refer to the official documentation:
 
@@ -26,7 +24,7 @@ Once FastClick is installed, start Click in hotswapping mode with the following 
 
 ---
 
-## Installing the Web Interface
+## Installing FastClick-Studio
 
 The web interface allows you to visualize and configure FastClick elements.
 
