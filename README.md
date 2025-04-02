@@ -1,5 +1,8 @@
 # FastClick Studio
 
+![FastClick Studio](docs/images/fastclick_studio.png)
+
+
 ## Installing **FastClick**
 
 FastClick is required. To install and configure it properly, refer to the official documentation:
