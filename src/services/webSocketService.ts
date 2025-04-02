@@ -8,10 +8,9 @@ export class WebsocketService {
   
   getClickConfig(): Observable<string> {
     return new Observable(observer => {
-      axios.get('/config', {
+      axios.get(`${getApiUrl()}/config`, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -24,10 +23,9 @@ export class WebsocketService {
 
   getFlatConfig(): Observable<string> {
     return new Observable(observer => {
-      axios.get('/flatconfig', {
+      axios.get(`${getApiUrl()}/flatconfig`, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -40,11 +38,10 @@ export class WebsocketService {
 
   sendCommand(command: string): Observable<string> {
     return new Observable(observer => {
-      axios.post('/command', { 
+      axios.post(`${getApiUrl()}/command`, { 
         command,
         headers: {
         'Content-Type': 'text/plain',
-        'X-API-TARGET': getApiUrl(),
       } })
         .then(response => {
           observer.next(response.data);
@@ -56,10 +53,9 @@ export class WebsocketService {
 
   getHandlers(element: string, handler: string): Observable<string[]> {
     return new Observable(observer => {
-      axios.get(`/fastclick/${element}/${handler}`, {
+      axios.get(`${getApiUrl()}/${element}/${handler}`, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -72,10 +68,9 @@ export class WebsocketService {
 
   getElementMap(): Observable<string> {
     return new Observable(observer => {
-      axios.get('/fastclick/element_map', {
+      axios.get(`${getApiUrl()}/element_map`, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -88,10 +83,9 @@ export class WebsocketService {
 
   getAllHandlersFields(element: string): Observable<string> {
     return new Observable(observer => {
-      axios.get(`/fastclick/${element}`, {
+      axios.get(`${getApiUrl()}/${element}`, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -104,10 +98,9 @@ export class WebsocketService {
 
   postHandler(element: string , handler: string, data: any) {
     return new Observable(observer => {
-      axios.post(`/fastclick/${element}/${handler}`, data, {
+      axios.post(`${getApiUrl()}/${element}/${handler}`, data, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
       })
         .then(response => {
@@ -120,10 +113,9 @@ export class WebsocketService {
 
   updateClickConfig(newConfig: string): Observable<string> {
     return new Observable(observer => {
-      axios.post('/fastclick/hotconfig', newConfig, {
+      axios.post(`${getApiUrl()}/hotconfig`, newConfig, {
         headers: {
           'Content-Type': 'text/plain',
-          'X-API-TARGET': getApiUrl(),
         }
     })
         .then(response => {

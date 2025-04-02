@@ -1,7 +1,9 @@
 {
+  "homepage": ".",
   "name": "fastclick-visualizer-react",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:3000",
   "dependencies": {
     "@chakra-ui/react": "^2.10.2",
     "@types/node": "^16.18.112",
@@ -11,7 +13,6 @@
     "axios": "^1.7.7",
     "elkjs": "^0.9.3",
     "html-to-image": "^1.11.11",
-    "http-proxy-middleware": "^3.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.3",
