@@ -81,6 +81,7 @@ const LayoutFlow = () => {
   const [interv, setInterv] = useState(5); // in seconds
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
+  const countPerSecondRef = useRef({});
   const [colorParams, setColorParams] = useState({ medium: 5, high: 12 });
 
 
@@ -139,7 +140,8 @@ const LayoutFlow = () => {
               const prevCount = lastReadingCountRef.current[node.id] || 0;
               const countDiff = newCount - prevCount;
               const countPerSecond = countDiff / (interv); // normalise per second
-              lastReadingCountRef.current[node.id] = newCount; 
+              lastReadingCountRef.current[node.id] = newCount;
+              countPerSecondRef.current[node.id] = countPerSecond;
 
               const { background, border } = getNodeColorByCount(countPerSecond, colorParams.medium, colorParams.high);
 
@@ -181,7 +183,7 @@ const LayoutFlow = () => {
     if (!router || nodesRef.current.length === 0) return;
     applyColorsToGraph(nodesRef.current, edgesRef.current, router)
       .then(({ updatedNodes, updatedEdges }) => {
-        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router);
+        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router, countPerSecondRef.current, colorParams);
         const newUpdateEdges = updatedEdges.map((edge) => {
           const targetNode = finalNodes.find((node) => node.id === edge.target);
           if (targetNode && targetNode.style && targetNode.style.border) {
