@@ -64,7 +64,7 @@ function HomePage() {
             textShadow="2px 2px 4px rgba(0,0,0,0.1)"
             fontFamily="heading"
           >
-            FastClick Visualizer
+            FastClick Studio
             <Box as="span" color="brand.500">.</Box>
           </Heading>
           <FormControl isRequired>
