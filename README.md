@@ -61,6 +61,28 @@ npm run start
 
 ---
 
+### Build the application
+
+To build the app for production use:
+
+```sh
+npm run build
+```
+
+The output will be in the `build/` folder.
+
+### Build into a single HTML file (inline)
+
+You can also create a single HTML file with everything (JS and CSS inline) :
+
+```sh
+npm run build:inline
+```
+
+The result will be available in the `dist/` folder as `index.html`.
+
+---
+
 ##  Note
 
 - Make sure FastClick is properly configured.
