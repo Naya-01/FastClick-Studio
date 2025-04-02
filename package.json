@@ -25,6 +25,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:inline": "npm run build && npx gulp",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -44,5 +45,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "gulp": "^5.0.0",
+    "gulp-inline-source": "^4.0.0",
+    "gulp-replace": "^1.1.4"
   }
 }
