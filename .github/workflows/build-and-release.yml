@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Build with inline HTML
-        run: npm run build:inline
+        run: CI='' npm run build:inline
 
       - name: Rename and prepare index.html
         run: |
