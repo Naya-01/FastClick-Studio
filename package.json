@@ -1,6 +1,6 @@
 {
   "homepage": ".",
-  "name": "fastclick-visualizer-react",
+  "name": "fastclick-studio",
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:3000",
