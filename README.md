@@ -11,6 +11,7 @@ To use **FastClick Studio**, you must:
 - Have **FastClick** installed and running in **userlevel mode**.
 - Start FastClick in **hotswapping** mode.
 - **Include an `HttpServer` element** in your Click configuration to expose the API that FastClick Studio communicates with.
+- Make sure FastClick is compiled with the `--enable-stats=2` option, which is required for the HTTP API to expose runtime statistics.
 
 ➡️ Documentation: [HttpServer – FastClick Wiki](https://github.com/tbarbette/fastclick/wiki/HTTPServer)
 
