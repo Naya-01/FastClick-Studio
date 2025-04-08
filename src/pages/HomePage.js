@@ -8,7 +8,9 @@ import {
   VStack,
   FormControl,
   FormLabel,
-  Input
+  Input,
+  Text,
+  Link
 } from '@chakra-ui/react';
 import { useAlert } from '../context/AlertContext';
 
@@ -92,6 +94,19 @@ function HomePage() {
           >
             Visualize FastClick configuration
           </Button>
+          <Link 
+            href='https://github.com/Naya-01/FastClick-Studio'
+            style={
+              {
+                textDecoration: 'underline',
+                color: 'brand.500',
+                fontSize: 'lg',
+                fontWeight: 'bold',
+              }
+            }
+          >
+            Official documentation
+          </Link>
         </VStack>
       </Flex>
     </Box>
