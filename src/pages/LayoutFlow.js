@@ -45,6 +45,7 @@ import AddElementModal from '../components/AddElementModal'
 import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
 import { useDownloadImage } from '../hooks/useDownloadImage';
 import Legend from '../components/Legend';
+import { ConfigStatus } from '../models/status';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -82,6 +83,7 @@ const LayoutFlow = () => {
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
   const countPerSecondRef = useRef({});
+  const [configStatus, setConfigStatus] = useState(ConfigStatus.IDLE);
   const [colorParams, setColorParams] = useState({ medium: 5, high: 12 });
 
 
@@ -101,7 +103,7 @@ const LayoutFlow = () => {
     updateNodeInternals
   );
 
-  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigUpdated);
+  const { generateClickConfig } = useClickConfig(nodes, edges, router, setConnectionError, setConfigStatus);
 
 
   useEffect(() => {
@@ -263,12 +265,15 @@ const LayoutFlow = () => {
   }, [colorsApplied]);
   
   useEffect(() => {
-    if (configUpdated) {
+    if (configStatus === ConfigStatus.SUCCESS) {
       fetchData();
-      setConfigUpdated(false);
+      setConfigStatus(ConfigStatus.IDLE);
       showAlert('Configuration Updated', 'The configuration has been updated successfully.', 'success');
+    }else if(configStatus === ConfigStatus.ERROR){
+      setConfigStatus(ConfigStatus.IDLE);
+      showAlert('Configuration Error', 'There was an error updating the configuration.', 'error');
     }
-  }, [configUpdated]);
+  }, [configStatus]);
 
   useEffect(() => {
     if (connectionError) {
