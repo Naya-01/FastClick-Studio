@@ -18,11 +18,19 @@ const DragPanel = () => {
   const [elements, setElements] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [elementMapError, setElementMapError] = useState(false);
   const webSocketService = new WebsocketService();
 
   const fetchElementMap = useCallback(() => {
     const subscription = webSocketService.getElementMap().subscribe({
       next: (elementMapString) => {
+
+        if (elementMapString.startsWith("Could not open elementmap file")) {
+          setElementMapError(true);
+          setElements([]);
+          return;
+        }
+
         try {
           const parsedElements = parseXMLFile(elementMapString);
           setElements(parsedElements);
@@ -99,33 +107,37 @@ const DragPanel = () => {
         Drag custom Node
       </Box>
 
-      <List spacing={3}>
-        {visibleElements.map((element) => (
-          <Tooltip label={element.name} key={element.name}>
-            <ListItem
-              draggable
-              onDragStart={(event) => onDragStart(event, element)}
-              cursor="grab"
-              whiteSpace="nowrap"
-              overflow="hidden"
-              textOverflow="ellipsis"
-            >
-              <Button
-                width="100%"
-                justifyContent="flex-start"
-                backgroundColor="white"
-                _hover={{ backgroundColor: getLiveColor() }}
-                p={2}
-                pointerEvents="none"
+      {elementMapError ? (
+        <Text color="red.500" mt={4}>No element map file found</Text>
+      ) : (
+        <List spacing={3}>
+          {visibleElements.map((element) => (
+            <Tooltip label={element.name} key={element.name}>
+              <ListItem
+                draggable
+                onDragStart={(event) => onDragStart(event, element)}
+                cursor="grab"
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
               >
-                <Box textAlign="left" pointerEvents="auto">
-                  <Text fontWeight="bold">{element.name}</Text>
-                </Box>
-              </Button>
-            </ListItem>
-          </Tooltip>
-        ))}
-      </List>
+                <Button
+                  width="100%"
+                  justifyContent="flex-start"
+                  backgroundColor="white"
+                  _hover={{ backgroundColor: getLiveColor() }}
+                  p={2}
+                  pointerEvents="none"
+                >
+                  <Box textAlign="left" pointerEvents="auto">
+                    <Text fontWeight="bold">{element.name}</Text>
+                  </Box>
+                </Button>
+              </ListItem>
+            </Tooltip>
+          ))}
+        </List>
+      )}
 
       <Box mt={4} textAlign="center">
         {startIdx + ITEMS_PER_PAGE < filteredElements.length && (
