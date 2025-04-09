@@ -66,6 +66,21 @@ export class WebsocketService {
     });
   }
 
+  getHandlersRouter(): Observable<string[]> {
+    return new Observable(observer => {
+      axios.get(`${getApiUrl()}/handlers`, {
+        headers: {
+          'Content-Type': 'text/plain',
+        }
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+
   getElementMap(): Observable<string> {
     return new Observable(observer => {
       axios.get(`${getApiUrl()}/element_map`, {

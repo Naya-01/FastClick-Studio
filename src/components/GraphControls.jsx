@@ -9,7 +9,7 @@ import {
   MenuDivider
 } from '@chakra-ui/react';
 
-export const GraphControls = ({ onDownloadImage, onGenerateConfig, onReorganize }) => {
+export const GraphControls = ({ onDownloadImage, onGenerateConfig, onReorganize, onDownloadFlatConfig }) => {
   const [format, setFormat] = useState('png');
 
   return (
@@ -32,6 +32,9 @@ export const GraphControls = ({ onDownloadImage, onGenerateConfig, onReorganize 
           <MenuDivider />
           <MenuItem onClick={onGenerateConfig}>
             Save Click Configuration
+          </MenuItem>
+          <MenuItem onClick={onDownloadFlatConfig}>
+            Download Flat Configuration
           </MenuItem>
           <MenuItem onClick={onReorganize}>
             Reorganize Nodes

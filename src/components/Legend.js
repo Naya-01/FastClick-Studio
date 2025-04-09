@@ -8,7 +8,6 @@ const getStorageKey = (mode) => `legendColorParams_${mode}`;
 
 const Legend = ({ colorParams, setColorParams, mode }) => {
   const [isEditing, setIsEditing] = useState(false);
-  console.log("colorParams", colorParams);
 
   const labelMode = mode === HandlerMode.COUNT ? 'packets/sec' : 'cycles/task';
 

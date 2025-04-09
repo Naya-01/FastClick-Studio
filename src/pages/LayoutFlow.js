@@ -201,6 +201,11 @@ const LayoutFlow = () => {
           countPerSecondRef.current[node.id] = countPerSecond;
           const { background, border } = getNodeColorByCount(countPerSecond, colorParamsMap[mode].medium, colorParamsMap[mode].high);
 
+          if (!router.getElement(node.id)) {
+            background = getAddColor();
+            border = getAddBorderColor();
+          }
+
           return {
             ...node,
             data: {
@@ -374,7 +379,6 @@ const LayoutFlow = () => {
   }, []);
 
   const handleAddElementConfirm = () => {
-    console.log("Adding element", newElementName);
     setEdges((prevEdges) => {
       const edgeToReplace = prevEdges.find((e) => e.id === pendingEdgeId);
       if (!edgeToReplace) return prevEdges;
@@ -614,6 +618,26 @@ const LayoutFlow = () => {
       setCenter(centerX, centerY, { duration: 500 });
     }
   }, [setCenter]);
+
+  const downloadFlatConfig = () => {
+    webSocketService.getFlatConfig().subscribe({
+      next: (flatConfig) => {
+        const blob = new Blob([flatConfig], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'config.click';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error("An error occurred while downloading the flat config :", error);
+      }
+    });
+  };
+  
   
   return (
     <>
@@ -680,6 +704,7 @@ const LayoutFlow = () => {
           onDownloadImage={useDownloadImage(reactFlowWrapper)}
           onGenerateConfig={generateClickConfig}
           onReorganize={handleReorganizeNodes}
+          onDownloadFlatConfig={downloadFlatConfig}
         />
         
         <Box

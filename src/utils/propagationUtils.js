@@ -145,7 +145,6 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
 };
 
   export const propagateColorsBackwardAndForward = (nodesList, edgesList, router, packetCounts, colorParams, mode) => {
-    console.log("packet count ", packetCounts);
     const backwardNodes = propagateBackward(nodesList, edgesList, packetCounts, colorParams, router, mode);
     const forwardNodes = propagateForward(backwardNodes, edgesList, packetCounts, colorParams, router, mode);
     return forwardNodes;
