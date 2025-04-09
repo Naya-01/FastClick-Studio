@@ -82,6 +82,7 @@ const LayoutFlow = () => {
   const [interv, setInterv] = useState(5); // in seconds
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
+  const lastReadingDropsRef = useRef({});
   const countPerSecondRef = useRef({});
   const [configStatus, setConfigStatus] = useState(ConfigStatus.IDLE);
   const [colorParams, setColorParams] = useState({ medium: 5, high: 12 });
@@ -119,46 +120,74 @@ const LayoutFlow = () => {
         const element = routerInstance.getElement(node.id);
         return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'count');
       });
+
+      const nodesWithDrops = nodesList.filter((node) => {
+        const element = routerInstance.getElement(node.id);
+        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'drops');
+      });
       if (nodesWithCount.length === 0) {
         return { updatedNodes: nodesList, updatedEdges: edgesList };
       }
       try {
-        const results = await Promise.all(
-          nodesWithCount.map((node) =>
-            lastValueFrom(webSocketService.getHandlers(node.id, 'count'))
+        console.log("node with drop ", nodesWithDrops);
+        const [countResults, dropsResults] = await Promise.all([
+          Promise.all(
+            nodesWithCount.map((node) =>
+              lastValueFrom(webSocketService.getHandlers(node.id, 'count'))
+            )
+          ),
+          Promise.all(
+            nodesWithDrops.map((node) =>
+              lastValueFrom(webSocketService.getHandlers(node.id, 'drops'))
+            )
           )
-        );
+        ]);
         const updatedNodes = nodesList.map((node) => {
           const element = routerInstance.getElement(node.id);
-          if (
-            element &&
-            element.handlers &&
-            element.handlers.some((h) => h.name.toLowerCase() === 'count')
-          ) {
-            const idx = nodesWithCount.findIndex((n) => n.id === node.id);
-            if (idx !== -1) {
+          let newCount = 0;
+          let newDrops = 0;
 
-              const newCount = Number(results[idx]);
-              const prevCount = lastReadingCountRef.current[node.id] || 0;
-              const countDiff = newCount - prevCount;
-              const countPerSecond = countDiff / (interv); // normalise per second
-              lastReadingCountRef.current[node.id] = newCount;
-              countPerSecondRef.current[node.id] = countPerSecond;
-
-              const { background, border } = getNodeColorByCount(countPerSecond, colorParams.medium, colorParams.high);
-
-              return {
-                ...node,
-                style: {
-                  ...node.style,
-                  backgroundColor: background,
-                  border: `1px solid ${border}`,
-                },
-              };
+          if (element && element.handlers) {
+            if (element.handlers.some((h) => h.name.toLowerCase() === 'count')) {
+              const idx = nodesWithCount.findIndex((n) => n.id === node.id);
+              if (idx !== -1) {
+                newCount = Number(countResults[idx]) || 0;
+              }
+            }
+            if (element.handlers.some((h) => h.name.toLowerCase() === 'drops')) {
+              const idx = nodesWithDrops.findIndex((n) => n.id === node.id);
+              if (idx !== -1) {
+                newDrops = Number(dropsResults[idx]) || 0;
+              }
             }
           }
-          return node;
+
+          const prevCount = lastReadingCountRef.current[node.id] || 0;
+          const prevDrops = lastReadingDropsRef.current[node.id] || 0;
+          const countDiff = newCount - prevCount;
+          const dropsDiff = newDrops - prevDrops;
+          const countPerSecond = countDiff / interv; // On ne prend que le count
+          const dropPerSecond = dropsDiff / interv;
+          lastReadingCountRef.current[node.id] = newCount;
+          lastReadingDropsRef.current[node.id] = newDrops;
+          countPerSecondRef.current[node.id] = countPerSecond;
+
+          const { background, border } = getNodeColorByCount(countPerSecond, colorParams.medium, colorParams.high);
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              drops: dropPerSecond,
+            },
+            style: {
+              ...node.style,
+              backgroundColor: background,
+              border: `1px solid ${border}`,
+            },
+          };
         });
+        
         const updatedEdges = edgesList.map((edge) => {
           const targetNode = updatedNodes.find((node) => node.id === edge.target);
           if (targetNode && targetNode.style && targetNode.style.border) {

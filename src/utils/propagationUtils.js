@@ -51,6 +51,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
     parents.forEach(parentId => {
       const parentPacketCount = nodeMap[parentId].data.packetCount || 0;
       const totalChildren = childCountPerParent[parentId] || 0;
+      const parentDrops = nodeMap[parentId].data?.drops || 0;
 
       if (totalChildren > 1) {
         nodeMap[parentId].data.packetCount = parentPacketCount + currentCount;
@@ -66,7 +67,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
         }
       } else if (totalChildren === 1) {
         if (parentPacketCount === 0) {
-          nodeMap[parentId].data.packetCount = currentCount;
+          nodeMap[parentId].data.packetCount = currentCount + parentDrops;
         }
         if (router.getElement(parentId)) {
 
@@ -114,13 +115,14 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
       if ((current.data.outputs || 0) > 1 || (current.data.inputs || 0) > 1) break;
       const childPacketCount = child.data.packetCount || 0;
       const currentPacketCount = nodeMap[current.id].data.packetCount || 0;
+      const childDrops = child.data?.drops || 0;
 
       const parentCount = edgesList.filter(edge => edge.target === child.id).length;
       if (childPacketCount === 0 || parentCount > 1) {
-        child.data.packetCount = currentPacketCount;
+        child.data.packetCount = currentPacketCount - childDrops;
 
         if (router.getElement(child.id)) {
-          const { background, border } = getNodeColorByCount(currentPacketCount, colorParams.medium, colorParams.high);
+          const { background, border } = getNodeColorByCount(child.data.packetCount, colorParams.medium, colorParams.high);
           child.style.backgroundColor = background;
           child.style.border = `1px solid ${border}`;
         }
