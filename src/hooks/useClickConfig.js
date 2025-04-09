@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { WebsocketService } from '../services/webSocketService';
-import { ConfigStatus } from '../models/status';
+import { ConfigStatus } from '../models/enums';
 
 export const useClickConfig = (nodes, edges, router, setConnectionError, setConfigStatus) => {
   const webSocketService = new WebsocketService();

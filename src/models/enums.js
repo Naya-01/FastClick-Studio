@@ -3,3 +3,8 @@ export const ConfigStatus = {
     SUCCESS: 'success',
     ERROR: 'error',
   };
+
+export const HandlerMode = {
+  COUNT: 'count',
+  CYCLE: 'cycles',
+}
