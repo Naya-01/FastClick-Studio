@@ -33,7 +33,7 @@ export const GraphControls = ({ onDownloadImage, onGenerateConfig, onReorganize,
             Set Format to SVG
           </MenuItem>
           <MenuDivider />
-          <MenuItem onClick={onGenerateConfig}>
+          <MenuItem onClick={onGenerateConfig} isDisabled={!onGenerateConfig}>
             Save Click Configuration
           </MenuItem>
           <MenuItem onClick={onDownloadFlatConfig}>

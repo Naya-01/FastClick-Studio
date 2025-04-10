@@ -93,6 +93,7 @@ const LayoutFlow = () => {
     [HandlerMode.CYCLE]: { medium: 350, high: 750 }
   });
   const [openRouterDetails, setOpenRouterDetails] = useState(false);
+  const [isHotconfig, setIsHotconfig] = useState(false);
 
 
 
@@ -275,8 +276,10 @@ const LayoutFlow = () => {
         next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
           await routerTreeModel.fetchHandlersForElementsAsync();
-          setRouter(routerTreeModel); 
+          setRouter(routerTreeModel);
           const pairs = routerTreeModel.getAllPairs();
+          const hotconfigHandler = routerTreeModel.getElement("handlers").handlers.find(handler => handler.name.toLowerCase() === "hotconfig");
+          setIsHotconfig(hotconfigHandler ? true : false);
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
             const edgesWithProposal = layoutedEdges.map((edge) => {
@@ -702,9 +705,25 @@ const LayoutFlow = () => {
           </ReactFlow>)}
         </Box>
 
+        {!isHotconfig && (
+          <Box
+            position="absolute"
+            top="20px"
+            right="800px"
+            p={3}
+            bg="yellow.400"
+            color="black"
+            borderRadius="md"
+            boxShadow="md"
+          >
+            <Text fontWeight="bold">Warning:</Text>
+            <Text>The hotconfig is missing ! The '-R' option is essential to enable hotconfig</Text>
+          </Box>
+        )}
+
         <GraphControls 
           onDownloadImage={useDownloadImage(reactFlowWrapper)}
-          onGenerateConfig={generateClickConfig}
+          onGenerateConfig={isHotconfig ? generateClickConfig : null}
           onReorganize={handleReorganizeNodes}
           onDownloadFlatConfig={downloadFlatConfig}
           openRouterDetails={() => setOpenRouterDetails(true)}
