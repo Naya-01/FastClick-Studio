@@ -38,7 +38,6 @@ const HandlerDetails = ({
     if (selectedNode) {
       const element = router.getElement(selectedNode.id);
       setHandlers(element.handlers);
-      setFilteredHandlers(element.handlers);
     }
   }, [selectedNode]);
 
