@@ -686,9 +686,9 @@ const LayoutFlow = () => {
             style={{ width: '100%', height: '100%' }}
           >
             <Background color="#f0f0f0" gap={16} />
+            <Legend colorParams={colorParamsMap[mode]} setColorParams={setColorParamsMap} mode={mode}/>
             <Controls 
             showInteractive={false}
-            style={{ bottom: 10, left: 200}}
             />
             <MiniMap />
             {contextMenu && <ContextMenu 
@@ -753,9 +753,6 @@ const LayoutFlow = () => {
             <Text fontWeight="medium">Count</Text>
           </FormControl>
         </Box>
-
-
-        <Legend colorParams={colorParamsMap[mode]} setColorParams={setColorParamsMap} mode={mode}/>
       </Box>
 
       <NodeModal 

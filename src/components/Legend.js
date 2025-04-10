@@ -45,7 +45,7 @@ const Legend = ({ colorParams, setColorParams, mode }) => {
     <Box
       position="absolute"
       bottom="10px"
-      left="260px"
+      left="50px"
       bg="white"
       p={2}
       borderRadius="md"
