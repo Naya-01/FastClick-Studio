@@ -48,6 +48,7 @@ import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
 import { useDownloadImage } from '../hooks/useDownloadImage';
 import Legend from '../components/Legend';
 import { ConfigStatus, HandlerMode } from '../models/enums';
+import RouterDetails from '../components/RouterDetails';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -91,6 +92,7 @@ const LayoutFlow = () => {
     [HandlerMode.COUNT]: { medium: 5, high: 12 },
     [HandlerMode.CYCLE]: { medium: 350, high: 750 }
   });
+  const [openRouterDetails, setOpenRouterDetails] = useState(false);
 
 
 
@@ -705,6 +707,7 @@ const LayoutFlow = () => {
           onGenerateConfig={generateClickConfig}
           onReorganize={handleReorganizeNodes}
           onDownloadFlatConfig={downloadFlatConfig}
+          openRouterDetails={() => setOpenRouterDetails(true)}
         />
         
         <Box
@@ -762,6 +765,12 @@ const LayoutFlow = () => {
         newElementName={newElementName}
         setNewElementName={setNewElementName}
         classesData={classesData}
+      />
+
+      <RouterDetails
+        isOpen={openRouterDetails}
+        onClose={() => setOpenRouterDetails(false)}
+        router={router}
       />
     </>
   );
