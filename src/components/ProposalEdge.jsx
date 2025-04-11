@@ -40,6 +40,7 @@ const ProposalEdge = ({
             pointerEvents: 'auto',
           }}
           zIndex={2000}
+          className="no-export"
         >
           <Button onClick={handleClick} size="sm" colorScheme="red">
             +

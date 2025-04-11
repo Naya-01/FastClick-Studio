@@ -11,7 +11,8 @@ export class WebsocketService {
       axios.get(`${getApiUrl()}/config`, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -26,7 +27,8 @@ export class WebsocketService {
       axios.get(`${getApiUrl()}/flatconfig`, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -41,8 +43,10 @@ export class WebsocketService {
       axios.post(`${getApiUrl()}/command`, { 
         command,
         headers: {
-        'Content-Type': 'text/plain',
-      } })
+          'Content-Type': 'text/plain',
+        },
+        responseType: 'text',
+      })
         .then(response => {
           observer.next(response.data);
           observer.complete();
@@ -56,7 +60,24 @@ export class WebsocketService {
       axios.get(`${getApiUrl()}/${element}/${handler}`, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+
+  getHandlersRouter(handler: string): Observable<string[]> {
+    return new Observable(observer => {
+      axios.get(`${getApiUrl()}/${handler}`, {
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -71,7 +92,8 @@ export class WebsocketService {
       axios.get(`${getApiUrl()}/element_map`, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -86,7 +108,8 @@ export class WebsocketService {
       axios.get(`${getApiUrl()}/${element}`, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -101,7 +124,24 @@ export class WebsocketService {
       axios.post(`${getApiUrl()}/${element}/${handler}`, data, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
+      })
+        .then(response => {
+          observer.next(response.data);
+          observer.complete();
+        })
+        .catch(error => observer.error(error));
+    });
+  }
+
+  postRouterHandler(handler: string, data: any) {
+    return new Observable(observer => {
+      axios.post(`${getApiUrl()}/${handler}`, data, {
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        responseType: 'text',
       })
         .then(response => {
           observer.next(response.data);
@@ -116,7 +156,8 @@ export class WebsocketService {
       axios.post(`${getApiUrl()}/hotconfig`, newConfig, {
         headers: {
           'Content-Type': 'text/plain',
-        }
+        },
+        responseType: 'text',
     })
         .then(response => {
           observer.next(response.data);

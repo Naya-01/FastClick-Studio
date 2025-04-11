@@ -47,6 +47,8 @@ export class RouterTreeModel {
         this.elements.set(name, new RouterElement(name, type, configuration));
       }
     });
+
+    this.elements.set("handlers", new RouterElement("handlers", "handlers", "")); // to add the router
   }
 
   private parseClickString(input: string): Pair[] {

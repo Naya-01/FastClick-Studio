@@ -16,6 +16,8 @@ import {
   Spinner,
   Text,
   VStack,
+  Switch,
+  FormControl,
 } from '@chakra-ui/react';
 import { handleData, calculateNodeWidth, getAdjustedCoordinates } from '../utils/graphUtils';
 import NodeListSidebar from '../components/NodeListSidebar';
@@ -45,7 +47,8 @@ import AddElementModal from '../components/AddElementModal'
 import { propagateColorsBackwardAndForward } from '../utils/propagationUtils';
 import { useDownloadImage } from '../hooks/useDownloadImage';
 import Legend from '../components/Legend';
-import { ConfigStatus } from '../models/status';
+import { ConfigStatus, HandlerMode } from '../models/enums';
+import RouterDetails from '../components/RouterDetails';
 
 const edgeTypes = {
   proposalEdge: ProposalEdge,
@@ -58,7 +61,6 @@ const nodeTypes = {
 const LayoutFlow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [configUpdated, setConfigUpdated] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [router, setRouter] = useState(null);
@@ -82,9 +84,16 @@ const LayoutFlow = () => {
   const [interv, setInterv] = useState(5); // in seconds
   const [colorsApplied, setColorsApplied] = useState(false);
   const lastReadingCountRef = useRef({});
+  const lastReadingDropsRef = useRef({});
   const countPerSecondRef = useRef({});
   const [configStatus, setConfigStatus] = useState(ConfigStatus.IDLE);
-  const [colorParams, setColorParams] = useState({ medium: 5, high: 12 });
+  const [mode, setMode] = useState(HandlerMode.COUNT);
+  const [colorParamsMap, setColorParamsMap] = useState({
+    [HandlerMode.COUNT]: { medium: 5, high: 12 },
+    [HandlerMode.CYCLE]: { medium: 350, high: 750 }
+  });
+  const [openRouterDetails, setOpenRouterDetails] = useState(false);
+  const [isHotconfig, setIsHotconfig] = useState(false);
 
 
 
@@ -117,48 +126,103 @@ const LayoutFlow = () => {
     async (nodesList, edgesList, routerInstance) => {
       const nodesWithCount = nodesList.filter((node) => {
         const element = routerInstance.getElement(node.id);
-        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'count');
+        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === mode);
+      });
+
+      const nodesWithDrops = nodesList.filter((node) => {
+        const element = routerInstance.getElement(node.id);
+        return element && element.handlers && element.handlers.some((h) => h.name.toLowerCase() === 'drops');
       });
       if (nodesWithCount.length === 0) {
         return { updatedNodes: nodesList, updatedEdges: edgesList };
       }
       try {
-        const results = await Promise.all(
-          nodesWithCount.map((node) =>
-            lastValueFrom(webSocketService.getHandlers(node.id, 'count'))
+        const [countResults, dropsResults] = await Promise.all([
+          Promise.all(
+            nodesWithCount.map((node) =>
+              lastValueFrom(webSocketService.getHandlers(node.id, mode))
+            )
+          ),
+          Promise.all(
+            nodesWithDrops.map((node) =>
+              lastValueFrom(webSocketService.getHandlers(node.id, 'drops'))
+            )
           )
-        );
+        ]);
+
+        if(mode === HandlerMode.CYCLE){
+          for(let i = 0; i < countResults.length; i++){
+            const response = countResults[i];
+            if (!response || response.trim() === "") continue;
+            const tokens = response.split(" ");
+            if (tokens.length < 3) continue;
+            const calls = Number(tokens[1]);
+            const cycles = Number(tokens[2]);
+            if (isNaN(calls) || isNaN(cycles) || calls === 0) continue;
+            const cyclesPerTask = cycles / calls;
+            countResults[i] = cyclesPerTask;
+          }
+        }
+
         const updatedNodes = nodesList.map((node) => {
           const element = routerInstance.getElement(node.id);
-          if (
-            element &&
-            element.handlers &&
-            element.handlers.some((h) => h.name.toLowerCase() === 'count')
-          ) {
-            const idx = nodesWithCount.findIndex((n) => n.id === node.id);
-            if (idx !== -1) {
+          let newCount = 0;
+          let newDrops = 0;
 
-              const newCount = Number(results[idx]);
-              const prevCount = lastReadingCountRef.current[node.id] || 0;
-              const countDiff = newCount - prevCount;
-              const countPerSecond = countDiff / (interv); // normalise per second
-              lastReadingCountRef.current[node.id] = newCount;
-              countPerSecondRef.current[node.id] = countPerSecond;
-
-              const { background, border } = getNodeColorByCount(countPerSecond, colorParams.medium, colorParams.high);
-
-              return {
-                ...node,
-                style: {
-                  ...node.style,
-                  backgroundColor: background,
-                  border: `1px solid ${border}`,
-                },
-              };
+          if (element && element.handlers) {
+            if (element.handlers.some((h) => h.name.toLowerCase() === mode)) {
+              const idx = nodesWithCount.findIndex((n) => n.id === node.id);
+              if (idx !== -1) {
+                newCount = Number(countResults[idx]) || 0;
+              }
+            }
+            if (element.handlers.some((h) => h.name.toLowerCase() === 'drops')) {
+              const idx = nodesWithDrops.findIndex((n) => n.id === node.id);
+              if (idx !== -1) {
+                newDrops = Number(dropsResults[idx]) || 0;
+              }
             }
           }
-          return node;
+
+          let countPerSecond = 0;
+          let dropPerSecond = 0;
+
+          if(mode === HandlerMode.CYCLE){
+            countPerSecond = newCount;
+
+          }else if(mode === HandlerMode.COUNT){
+            const prevCount = lastReadingCountRef.current[node.id] || 0;
+            const prevDrops = lastReadingDropsRef.current[node.id] || 0;
+            const countDiff = newCount - prevCount;
+            const dropsDiff = newDrops - prevDrops;
+            countPerSecond = countDiff / interv; // On ne prend que le count
+            dropPerSecond = dropsDiff / interv;
+            lastReadingCountRef.current[node.id] = newCount;
+            lastReadingDropsRef.current[node.id] = newDrops;
+          }
+
+          countPerSecondRef.current[node.id] = countPerSecond;
+          const { background, border } = getNodeColorByCount(countPerSecond, colorParamsMap[mode].medium, colorParamsMap[mode].high);
+
+          if (!router.getElement(node.id)) {
+            background = getAddColor();
+            border = getAddBorderColor();
+          }
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              drops: dropPerSecond,
+            },
+            style: {
+              ...node.style,
+              backgroundColor: background,
+              border: `1px solid ${border}`,
+            },
+          };
         });
+
         const updatedEdges = edgesList.map((edge) => {
           const targetNode = updatedNodes.find((node) => node.id === edge.target);
           if (targetNode && targetNode.style && targetNode.style.border) {
@@ -185,7 +249,7 @@ const LayoutFlow = () => {
     if (!router || nodesRef.current.length === 0) return;
     applyColorsToGraph(nodesRef.current, edgesRef.current, router)
       .then(({ updatedNodes, updatedEdges }) => {
-        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router, countPerSecondRef.current, colorParams);
+        const finalNodes = propagateColorsBackwardAndForward(updatedNodes, updatedEdges, router, countPerSecondRef.current, colorParamsMap[mode], mode);
         const newUpdateEdges = updatedEdges.map((edge) => {
           const targetNode = finalNodes.find((node) => node.id === edge.target);
           if (targetNode && targetNode.style && targetNode.style.border) {
@@ -212,8 +276,10 @@ const LayoutFlow = () => {
         next: async (configData) => {
           const routerTreeModel = new RouterTreeModel(configData);
           await routerTreeModel.fetchHandlersForElementsAsync();
-          setRouter(routerTreeModel); 
+          setRouter(routerTreeModel);
           const pairs = routerTreeModel.getAllPairs();
+          const hotconfigHandler = routerTreeModel.getElement("handlers").handlers.find(handler => handler.name.toLowerCase() === "hotconfig");
+          setIsHotconfig(hotconfigHandler ? true : false);
   
           handleData(pairs, routerTreeModel).then(({ nodes: layoutedNodes, edges: layoutedEdges }) => {
             const edgesWithProposal = layoutedEdges.map((edge) => {
@@ -318,7 +384,6 @@ const LayoutFlow = () => {
   }, []);
 
   const handleAddElementConfirm = () => {
-    console.log("Adding element", newElementName);
     setEdges((prevEdges) => {
       const edgeToReplace = prevEdges.find((e) => e.id === pendingEdgeId);
       if (!edgeToReplace) return prevEdges;
@@ -558,6 +623,26 @@ const LayoutFlow = () => {
       setCenter(centerX, centerY, { duration: 500 });
     }
   }, [setCenter]);
+
+  const downloadFlatConfig = () => {
+    webSocketService.getFlatConfig().subscribe({
+      next: (flatConfig) => {
+        const blob = new Blob([flatConfig], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'config.click';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error("An error occurred while downloading the flat config :", error);
+      }
+    });
+  };
+  
   
   return (
     <>
@@ -601,9 +686,9 @@ const LayoutFlow = () => {
             style={{ width: '100%', height: '100%' }}
           >
             <Background color="#f0f0f0" gap={16} />
+            <Legend colorParams={colorParamsMap[mode]} setColorParams={setColorParamsMap} mode={mode}/>
             <Controls 
             showInteractive={false}
-            style={{ bottom: 10, left: 200}}
             />
             <MiniMap />
             {contextMenu && <ContextMenu 
@@ -620,13 +705,54 @@ const LayoutFlow = () => {
           </ReactFlow>)}
         </Box>
 
+        {!isHotconfig && (
+          <Box
+            position="absolute"
+            top="20px"
+            right="800px"
+            p={3}
+            bg="yellow.400"
+            color="black"
+            borderRadius="md"
+            boxShadow="md"
+          >
+            <Text fontWeight="bold">Warning:</Text>
+            <Text>The hotconfig is missing ! The '-R' option is essential to enable hotconfig</Text>
+          </Box>
+        )}
+
         <GraphControls 
           onDownloadImage={useDownloadImage(reactFlowWrapper)}
-          onGenerateConfig={generateClickConfig}
+          onGenerateConfig={isHotconfig ? generateClickConfig : null}
           onReorganize={handleReorganizeNodes}
+          onDownloadFlatConfig={downloadFlatConfig}
+          openRouterDetails={() => setOpenRouterDetails(true)}
         />
-
-        <Legend colorParams={colorParams} setColorParams={setColorParams} />
+        
+        <Box
+          position="absolute"
+          top="13px"
+          right="450px"
+          zIndex="1000"
+          bg="gray.100"
+          px={4}
+          py={2}
+          borderRadius="xl"
+          boxShadow="md"
+        >
+          <FormControl display="flex" alignItems="center" gap={4}>
+            <Text fontWeight="medium">Cycles</Text>
+            <Switch
+              id="mode-switch"
+              isChecked={mode === HandlerMode.COUNT}
+              onChange={(e) =>
+                setMode(e.target.checked ? HandlerMode.COUNT : HandlerMode.CYCLE)
+              }
+              colorScheme="blue"
+            />
+            <Text fontWeight="medium">Count</Text>
+          </FormControl>
+        </Box>
       </Box>
 
       <NodeModal 
@@ -655,6 +781,12 @@ const LayoutFlow = () => {
         newElementName={newElementName}
         setNewElementName={setNewElementName}
         classesData={classesData}
+      />
+
+      <RouterDetails
+        isOpen={openRouterDetails}
+        onClose={() => setOpenRouterDetails(false)}
+        router={router}
       />
     </>
   );

@@ -1,6 +1,7 @@
+import { HandlerMode } from '../models/enums';
 import { getNodeColorByCount } from './colors';
 
-export const propagateBackward = (nodesList, edgesList, packetCounts, colorParams, router) => {
+export const propagateBackward = (nodesList, edgesList, packetCounts, colorParams, router, mode) => {
   const nodeMap = {};
   const childrenByNode = {};
   const visitCount = {};
@@ -51,6 +52,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
     parents.forEach(parentId => {
       const parentPacketCount = nodeMap[parentId].data.packetCount || 0;
       const totalChildren = childCountPerParent[parentId] || 0;
+      const parentDrops = nodeMap[parentId].data?.drops || 0;
 
       if (totalChildren > 1) {
         nodeMap[parentId].data.packetCount = parentPacketCount + currentCount;
@@ -66,7 +68,11 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
         }
       } else if (totalChildren === 1) {
         if (parentPacketCount === 0) {
-          nodeMap[parentId].data.packetCount = currentCount;
+          if(mode === HandlerMode.COUNT) {
+            nodeMap[parentId].data.packetCount = currentCount + parentDrops;
+          } else {
+            nodeMap[parentId].data.packetCount = currentCount;
+          }
         }
         if (router.getElement(parentId)) {
 
@@ -84,7 +90,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
 };
 
 
-export const propagateForward = (nodesList, edgesList, packetCounts, colorParams, router) => {
+export const propagateForward = (nodesList, edgesList, packetCounts, colorParams, router, mode) => {
   const nodeMap = {};
   nodesList.forEach(node => {
     const initialCount = packetCounts[node.id] || 0;
@@ -114,13 +120,18 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
       if ((current.data.outputs || 0) > 1 || (current.data.inputs || 0) > 1) break;
       const childPacketCount = child.data.packetCount || 0;
       const currentPacketCount = nodeMap[current.id].data.packetCount || 0;
+      const childDrops = child.data?.drops || 0;
 
       const parentCount = edgesList.filter(edge => edge.target === child.id).length;
       if (childPacketCount === 0 || parentCount > 1) {
-        child.data.packetCount = currentPacketCount;
+        if(mode === HandlerMode.COUNT){
+          child.data.packetCount = currentPacketCount - childDrops;
+        } else {
+          child.data.packetCount = currentPacketCount;  
+        }
 
         if (router.getElement(child.id)) {
-          const { background, border } = getNodeColorByCount(currentPacketCount, colorParams.medium, colorParams.high);
+          const { background, border } = getNodeColorByCount(child.data.packetCount, colorParams.medium, colorParams.high);
           child.style.backgroundColor = background;
           child.style.border = `1px solid ${border}`;
         }
@@ -133,8 +144,8 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
   return Object.values(nodeMap);
 };
 
-  export const propagateColorsBackwardAndForward = (nodesList, edgesList, router, packetCounts, colorParams) => {
-    const backwardNodes = propagateBackward(nodesList, edgesList, packetCounts, colorParams, router);
-    const forwardNodes = propagateForward(backwardNodes, edgesList, packetCounts, colorParams, router);
+  export const propagateColorsBackwardAndForward = (nodesList, edgesList, router, packetCounts, colorParams, mode) => {
+    const backwardNodes = propagateBackward(nodesList, edgesList, packetCounts, colorParams, router, mode);
+    const forwardNodes = propagateForward(backwardNodes, edgesList, packetCounts, colorParams, router, mode);
     return forwardNodes;
   };
