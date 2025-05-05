@@ -27,7 +27,7 @@ export function useDownloadImage(reactFlowWrapper) {
     const originalDisplay = [];
     noExportElements.forEach((el, index) => {
       originalDisplay[index] = el.style.display;
-      el.style.display = 'hidden'; 
+      el.style.display = 'none'; 
     });
 
     downloadFn(reactFlowWrapper.current, options)

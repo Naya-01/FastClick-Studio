@@ -93,7 +93,7 @@ const LayoutFlow = () => {
     [HandlerMode.CYCLE]: { medium: 350, high: 750 }
   });
   const [openRouterDetails, setOpenRouterDetails] = useState(false);
-  const [isHotconfig, setIsHotconfig] = useState(false);
+  const [isHotconfig, setIsHotconfig] = useState(true);
 
 
 
