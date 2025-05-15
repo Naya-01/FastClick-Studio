@@ -14,6 +14,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
       data: {
         ...node.data,
         packetCount: initialCount,
+        distance: router.getElement(node.id).handlers.find(handler => handler.name.toLowerCase() === mode) ? 0 : Infinity,
       },
       style: { ...node.style },
     };
@@ -47,6 +48,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
   while (queue.length > 0) {
     const currentId = queue.shift();
     const currentCount = nodeMap[currentId].data.packetCount || 0;
+    const currentDistance = nodeMap[currentId].data.distance;
 
     const parents = parentsByChild[currentId] || [];
     parents.forEach(parentId => {
@@ -59,6 +61,9 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
         visitCount[parentId] += 1;
 
         if (visitCount[parentId] === totalChildren) {
+          const childDistances = (childrenByNode[parentId] || []).map(childId => nodeMap[childId].data.distance);
+          const avgDistance = childDistances.reduce((a, b) => a + b, 0) / childDistances.length;
+          nodeMap[parentId].data.distance = avgDistance + 1;
           if (router.getElement(parentId)) {
             const { background, border } = getNodeColorByCount(nodeMap[parentId].data.packetCount, colorParams.medium, colorParams.high);
             nodeMap[parentId].style.backgroundColor = background;
@@ -67,19 +72,24 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
           queue.push(parentId);
         }
       } else if (totalChildren === 1) {
-        if (parentPacketCount === 0) {
-          if(mode === HandlerMode.COUNT) {
-            nodeMap[parentId].data.packetCount = currentCount + parentDrops;
-          } else {
-            nodeMap[parentId].data.packetCount = currentCount;
-          }
-        }
-        if (router.getElement(parentId)) {
+        const newDistance = currentDistance + 1;
+        if (newDistance < nodeMap[parentId].data.distance) {
+          nodeMap[parentId].data.distance = newDistance;
 
-          const effectiveCount = nodeMap[parentId].data.packetCount || 0;
-          const { background, border } = getNodeColorByCount(effectiveCount, colorParams.medium, colorParams.high);
-          nodeMap[parentId].style.backgroundColor = background;
-          nodeMap[parentId].style.border = `1px solid ${border}`;
+          if (parentPacketCount === 0) {
+            if(mode === HandlerMode.COUNT) {
+              nodeMap[parentId].data.packetCount = currentCount + parentDrops;
+            } else {
+              nodeMap[parentId].data.packetCount = currentCount;
+            }
+          }
+          if (router.getElement(parentId)) {
+
+            const effectiveCount = nodeMap[parentId].data.packetCount || 0;
+            const { background, border } = getNodeColorByCount(effectiveCount, colorParams.medium, colorParams.high);
+            nodeMap[parentId].style.backgroundColor = background;
+            nodeMap[parentId].style.border = `1px solid ${border}`;
+          }
         }
         queue.push(parentId);
       }
@@ -99,7 +109,7 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
       ...node,
       data: {
         ...node.data,
-        packetCount: initialCount,
+        //packetCount: initialCount,
       },
       style: { ...node.style },
     };
@@ -121,15 +131,17 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
       const childPacketCount = child.data.packetCount || 0;
       const currentPacketCount = nodeMap[current.id].data.packetCount || 0;
       const childDrops = child.data?.drops || 0;
+      const newDistance = nodeMap[current.id].data.distance + 1;
 
       const parentCount = edgesList.filter(edge => edge.target === child.id).length;
-      if (childPacketCount === 0 || parentCount > 1) {
+      if ((childPacketCount === 0 || parentCount === 1) && newDistance < child.data.distance) {
         if(mode === HandlerMode.COUNT){
           child.data.packetCount = currentPacketCount - childDrops;
         } else {
           child.data.packetCount = currentPacketCount;  
         }
 
+        child.data.distance = newDistance;
         if (router.getElement(child.id)) {
           const { background, border } = getNodeColorByCount(child.data.packetCount, colorParams.medium, colorParams.high);
           child.style.backgroundColor = background;
