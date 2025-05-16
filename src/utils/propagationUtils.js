@@ -130,13 +130,14 @@ export const propagateForward = (nodesList, edgesList, packetCounts, colorParams
       if ((current.data.outputs || 0) > 1 || (current.data.inputs || 0) > 1) break;
       const childPacketCount = child.data.packetCount || 0;
       const currentPacketCount = nodeMap[current.id].data.packetCount || 0;
-      const childDrops = child.data?.drops || 0;
+      //const childDrops = child.data?.drops || 0;
+      const parentDrops = nodeMap[current.id].data?.drops || 0;
       const newDistance = nodeMap[current.id].data.distance + 1;
 
       const parentCount = edgesList.filter(edge => edge.target === child.id).length;
       if ((childPacketCount === 0 || parentCount === 1) && newDistance < child.data.distance) {
         if(mode === HandlerMode.COUNT){
-          child.data.packetCount = currentPacketCount - childDrops;
+          child.data.packetCount = currentPacketCount - parentDrops;
         } else {
           child.data.packetCount = currentPacketCount;  
         }
