@@ -102,8 +102,6 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
     });
   }
 
-  console.log("backward propagation", nodeMap);
-
   return Object.values(nodeMap);
 };
 
