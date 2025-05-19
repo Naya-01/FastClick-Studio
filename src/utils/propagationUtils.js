@@ -19,6 +19,12 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
       style: { ...node.style },
     };
 
+    if (mode === HandlerMode.CYCLE) {
+      if (initialCount === 0) {
+        nodeMap[node.id].data.distance = Infinity;
+      }
+    }
+
     if (router.getElement(node.id)) {
       const { background, border } = getNodeColorByCount(initialCount, colorParams.medium, colorParams.high);
       nodeMap[node.id].style.backgroundColor = background;
@@ -95,6 +101,8 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
       }
     });
   }
+
+  console.log("backward propagation", nodeMap);
 
   return Object.values(nodeMap);
 };
