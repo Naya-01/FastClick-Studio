@@ -14,7 +14,7 @@ export const propagateBackward = (nodesList, edgesList, packetCounts, colorParam
       data: {
         ...node.data,
         packetCount: initialCount,
-        distance: router.getElement(node.id).handlers.find(handler => handler.name.toLowerCase() === mode) ? 0 : Infinity,
+        distance: router.getElement(node.id)?.handlers?.find(handler => handler.name.toLowerCase() === mode) ? 0 : Infinity,
       },
       style: { ...node.style },
     };
